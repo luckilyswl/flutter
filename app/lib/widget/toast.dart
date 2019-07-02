@@ -22,18 +22,16 @@ class Toast {
                 //top值，可以改变这个值来改变toast在屏幕中的位置
                 top: MediaQuery.of(context).size.height * 4 / 5,
                 child: Container(
-                    alignment: Alignment.center,
-                    width: MediaQuery.of(context).size.width,
-                    child: Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 80.0),
-                      child: AnimatedOpacity(
-                        opacity: _showing ? 1.0 : 0.0, //目标透明度
-                        duration: _showing
-                            ? Duration(milliseconds: 100)
-                            : Duration(milliseconds: 400),
-                        child: _buildToastWidget(),
-                      ),
-                    )),
+                  alignment: Alignment.center,
+                  width: MediaQuery.of(context).size.width,
+                  child: AnimatedOpacity(
+                    opacity: _showing ? 1.0 : 0.0, //目标透明度
+                    duration: _showing
+                        ? Duration(milliseconds: 100)
+                        : Duration(milliseconds: 400),
+                    child: _buildToastWidget(),
+                  ),
+                ),
               ));
       overlayState.insert(_overlayEntry);
     } else {

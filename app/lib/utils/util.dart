@@ -4,9 +4,9 @@ import 'package:uuid/uuid.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class Util {
-  static double getCurrentTime() {
+  static int getCurrentTime() {
     double nowTime = DateTime.now().millisecondsSinceEpoch / 1000;
-    return nowTime;
+    return nowTime.toInt();
   }
 
   static String getPlatform() {

@@ -31,11 +31,19 @@ dependencies:
   uuid: 2.0.1 #uuid
   shared_preferences: ^0.4.3  # 本地存储、收藏功能
   fluwx: ^0.6.3 #微信
-  cached_network_image: ^0.8.0   #加载和缓存网络图像
-  image_gallery_saver: ^1.1.0   #图片保存
+  cached_network_image: ^0.8.0
+  image_gallery_saver: ^1.1.0
   permission_handler: ^3.0.1
   image_saver: ^1.0.0
   http: ^0.12.0+2
+  event_bus: ^1.1.0
+  common_utils: '>=1.1.0 <3.0.0' # Dart 常用工具类库 https://github.com/Sky24n/common_utils
+  json2entity: ^1.0.6
+  flutter_spinkit: ^3.1.0 #loading
+
+  gzx_dropdown_menu:
+      git:
+        url: https://github.com/GanZhiXiong/gzx_dropdown_menu.git
 
 dev_dependencies:
   flutter_test:
@@ -58,22 +66,7 @@ flutter:
   #  - images/a_dot_burr.jpeg
   #  - images/a_dot_ham.jpeg
   assets:
-    - assets/images/ic_kefurexian.png
-    - assets/images/me_bg.png
-    - assets/images/ic_more.png
-    - assets/images/ic_message.png
-    - assets/images/ic_edit.png
-    - assets/images/service_1.png
-    - assets/images/service_2.png
-    - assets/images/ic_me_change.png
-    - assets/images/ic_daijiucan.png
-    - assets/images/ic_daimaidan.png
-    - assets/images/ic_recharge.png
-    - assets/images/ic_wodeyue.png
-    - assets/images/ic_qianbao.png
-    - assets/images/ic_menu.png
-    - assets/images/ic_save_success.png
-    - assets/images/ic_save_failed.png
+    - assets/images/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/assets-and-images/#resolution-aware.

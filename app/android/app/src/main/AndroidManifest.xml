@@ -14,7 +14,7 @@
     
     <application
         android:name="io.flutter.app.FlutterApplication"
-        android:label="app"
+        android:label="请上座"
         android:icon="@mipmap/ic_launcher">
         <activity
             android:name=".MainActivity"
@@ -35,5 +35,40 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
+
+        <activity
+            android:name=".wxapi.WXEntryActivity"
+            android:launchMode="singleTop"
+            android:theme="@style/DisablePreviewTheme" />
+        <activity
+            android:name=".wxapi.WXPayEntryActivity"
+            android:launchMode="singleTop"
+            android:theme="@style/DisablePreviewTheme" />
+
+        <activity-alias
+            android:name="${applicationId}.wxapi.WXEntryActivity"
+            android:exported="true"
+            android:launchMode="singleTop"
+            android:targetActivity="com.jarvan.fluwx.wxapi.WXEntryActivity"
+            android:theme="@style/DisablePreviewTheme">
+
+
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity-alias>
+        <activity-alias
+            android:name="${applicationId}.wxapi.WXPayEntryActivity"
+            android:exported="true"
+            android:launchMode="singleTop"
+            android:targetActivity="com.jarvan.fluwx.wxapi.WXPayEntryActivity"
+            android:theme="@style/DisablePreviewTheme">
+
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity-alias>
     </application>
 </manifest>

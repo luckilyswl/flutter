@@ -1,8 +1,10 @@
 import 'dart:io';
+import 'package:app/utils/data_utils.dart';
 import 'package:dio/dio.dart';
 import 'dart:convert';
 import 'package:convert/convert.dart';
 import 'package:crypto/crypto.dart';
+import 'package:flutter/material.dart';
 import 'dart:collection';
 import 'api/api.dart';
 import 'utils/util.dart';
@@ -13,12 +15,18 @@ class CustomInterceptor extends Interceptor {
     var defaultParameters = new SplayTreeMap();
     defaultParameters["longitude"] = "113.3100967407226";
     defaultParameters["latitude"] = "23.07718849182129";
-    defaultParameters["city_id"] = "2253";
-    defaultParameters["session_id"] = "SfwAGhSCKOLcZtRysjin";
+    if (DataUtils.getCityId() != 0) {
+      debugPrint(DataUtils.getCityId().toString());
+      defaultParameters["city_id"] = DataUtils.getCityId().toString();
+    }
+    String sessionId = DataUtils.getSessionId();
+    if (sessionId != null && sessionId.isNotEmpty) {
+      defaultParameters["session_id"] = sessionId;
+    }
     defaultParameters["app_platform"] = Util.getPlatform();
     defaultParameters["app_channel"] = "360";
     defaultParameters["app_version"] = await Util.getVersion();
-    defaultParameters["timestamp"] = Util.getCurrentTime().toStringAsFixed(0);
+    defaultParameters["timestamp"] = Util.getCurrentTime().toString();
     defaultParameters["device_id"] = await Util.getUUID();
     defaultParameters.addAll(options.queryParameters);
 
@@ -35,8 +43,24 @@ class CustomInterceptor extends Interceptor {
     String apiSign = hex.encode(digest.bytes);
     defaultParameters["api_sign"] = apiSign;
 
+    // 打印网络请求日志
     options.queryParameters = Map.from(defaultParameters);
+    String url = options.baseUrl + options.path;
+
+    String query = "";
+    String temp;
+    Map<String, dynamic> map = options.queryParameters;
+    map.forEach((String key, dynamic value) {
+      temp = key + "=" + value.toString() + "&";
+      query = query + temp;
+    });
+    print("网络请求: " + options.method + " " + url + "?" + query);
     return super.onRequest(options);
+  }
+  @override
+  onResponse(Response response) {
+    print(response.data.toString());
+    return super.onResponse(response);
   }
 }
 

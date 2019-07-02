@@ -23,12 +23,17 @@ class ThemeColors {
   static const color66401F = Color(0xFF66401F);
 
   static const colorF3F3F3 = Color(0xFFF3F3F3);
+  static const colorE3E3E3 = Color(0xFFE3E3E3);
   static const colorF1F1F1 = Color(0xFFF1F1F1);
   static const colorEEEEEE = Color(0xFFEEEEEE);
   static const colorE1E1E1 = Color(0xFFE1E1E1);
+  static const colorDCDCDC = Color(0xFFDCDCDC);
   static const colorEDEDED = Color(0xFFEDEDED);
+  static const colorDEDEDE = Color(0xFFDEDEDE);
+  static const colorD8D8D8 = Color(0xFFD8D8D8);
   static const colorB8B5BA = Color(0xFFB8B5BA);
   static const colorA6A6A6 = Color(0xFFA6A6A6);
+  static const colorF2F2F2 = Color(0xFFF2F2F2);
   static const color9B9B9B = Color(0xFF9B9B9B);
   static const color979797 = Color(0xFF979797);
   static const color666666 = Color(0xFF666666);
@@ -36,9 +41,13 @@ class ThemeColors {
   static const color404040 = Color(0xFF404040);
   static const color353535 = Color(0xFF353535);
   static const color333333 = Color(0xFF333333);
+  static const color0D4A4A4A = Color(0x0D4A4A4A);
   static const colorD0000000 = Color(0xD000000);
+  static const color991A1A1A = Color(0x991A1A1A);
   static const color222222 = Color(0xFF222222);
   static const color1A1A1A = Color(0xFF1A1A1A);
+  static const color96000000 = Color(0x96000000);
 
+  static const colorD0021B = Color(0xFFD0021B);
   static const colorE44239 = Color(0xFFE44239);
 }
