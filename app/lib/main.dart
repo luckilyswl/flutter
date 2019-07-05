@@ -34,12 +34,11 @@ class _MyAppState extends State<MyApp> {
   @override
   void initState() {
     _initFluwx();
-    dio.get(Api.INIT).then(
-        (data) {
+    dio.get(Api.INIT).then((data) {
       var sources = jsonDecode(data.toString());
       AppInitInfoBean bean = AppInitInfoBean.fromJson(sources);
       Data dataBean = bean.data;
-      if (bean.errorCode == "0") {
+      if (bean.errorCode == Api.SUCCESS_CODE) {
         DataUtils.saveInitInfo(dataBean);
         DataUtils.saveCityId(dataBean.currentCity.cityId);
       }

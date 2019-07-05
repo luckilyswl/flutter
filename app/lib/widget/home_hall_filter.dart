@@ -150,11 +150,15 @@ class HallFilterState extends State<HallFilter> {
                 text,
                 style: isDark
                     ? const TextStyle(
+                        decoration: TextDecoration.none,
                         fontSize: 12,
                         color: ThemeColors.color404040,
                         fontWeight: FontWeight.w400)
                     : const TextStyle(
-                        fontSize: 12, color: ThemeColors.colorA6A6A6),
+                        decoration: TextDecoration.none,
+                        fontSize: 12,
+                        fontWeight: FontWeight.normal,
+                        color: ThemeColors.colorA6A6A6),
               ),
               SizedBox(width: 2),
               SizedBox(

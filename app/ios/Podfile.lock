@@ -9,6 +9,7 @@ PODS:
     - Flutter
   - image_saver (0.0.1):
     - Flutter
+  - OpenAliPaySDK (15.6.4)
   - package_info (0.0.1):
     - Flutter
   - path_provider (0.0.1):
@@ -20,6 +21,9 @@ PODS:
   - sqflite (0.0.1):
     - Flutter
     - FMDB (~> 2.7.2)
+  - tobias (0.0.1):
+    - Flutter
+    - OpenAliPaySDK (~> 15.6.4)
   - url_launcher (0.0.1):
     - Flutter
 
@@ -33,11 +37,13 @@ DEPENDENCIES:
   - permission_handler (from `.symlinks/plugins/permission_handler/ios`)
   - shared_preferences (from `.symlinks/plugins/shared_preferences/ios`)
   - sqflite (from `.symlinks/plugins/sqflite/ios`)
+  - tobias (from `.symlinks/plugins/tobias/ios`)
   - url_launcher (from `.symlinks/plugins/url_launcher/ios`)
 
 SPEC REPOS:
   https://github.com/cocoapods/specs.git:
     - FMDB
+    - OpenAliPaySDK
 
 EXTERNAL SOURCES:
   Flutter:
@@ -58,6 +64,8 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/shared_preferences/ios"
   sqflite:
     :path: ".symlinks/plugins/sqflite/ios"
+  tobias:
+    :path: ".symlinks/plugins/tobias/ios"
   url_launcher:
     :path: ".symlinks/plugins/url_launcher/ios"
 
@@ -67,11 +75,13 @@ SPEC CHECKSUMS:
   FMDB: 2ce00b547f966261cd18927a3ddb07cb6f3db82a
   image_gallery_saver: 1798f45aab0db52c4a2a161409c361340a19908e
   image_saver: 687f4ca28ae104255c78612b3420422791f2d2aa
+  OpenAliPaySDK: 6b4421139f6e8c6d7b6203c9857e34bf4b2b71ff
   package_info: 78cabb3c322943c55d39676f4a5bfc748c01d055
   path_provider: f96fff6166a8867510d2c25fdcc346327cc4b259
   permission_handler: fa6b0d784b1a43cb96b468a5b8365cb130b1956a
   shared_preferences: 1feebfa37bb57264736e16865e7ffae7fc99b523
   sqflite: ff1d9da63c06588cc8d1faf7256d741f16989d5a
+  tobias: ee7b1eb8c2e40241062061e9a742ab549231450c
   url_launcher: 0067ddb8f10d36786672aa0722a21717dba3a298
 
 PODFILE CHECKSUM: 385dbfa0cd0ce046b1730e9ce07887b983ce9a9c

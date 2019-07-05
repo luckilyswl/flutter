@@ -12,3 +12,7 @@ export 'dialog/index.dart';
 export 'login/index.dart';
 export 'hall_filter/index.dart';
 export 'city_selector_popup_window.dart';
+export 'book_now_popup_window.dart';
+export 'book_now_content.dart';
+export 'room_detail_popup_window.dart';
+export 'custom_banner.dart';

@@ -1,5 +1,6 @@
 import 'package:app/api/api.dart';
 import 'package:app/http.dart';
+import 'package:app/navigator/page_route.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -45,7 +46,7 @@ class _CustomerServicePageState extends State<CustomerServicePage> with Automati
       CustomServiceBean bean  = CustomServiceBean.fromJson(sources);
       DataBean dataBean = bean.data;
 
-      if (bean.errorCode == "0") {
+      if (bean.errorCode == Api.SUCCESS_CODE) {
         setState(() {
           _phone = dataBean.phone;
           _qrCode = dataBean.qrcode;
@@ -406,8 +407,9 @@ class _CustomerServicePageState extends State<CustomerServicePage> with Automati
    * 复制微信号
    **/
   _copyWeChatId(String id) {
-    Clipboard.setData(ClipboardData(text: id));
-    Toast.SaveImageToast.toast(context, '复制成功', true);
+    Navigator.of(context).pushNamed(Page.BOOK_INFO_PAGE);
+    // Clipboard.setData(ClipboardData(text: id));
+    // Toast.SaveImageToast.toast(context, '复制成功', true);
   }
 
   /*

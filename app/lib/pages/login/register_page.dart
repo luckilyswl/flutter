@@ -11,6 +11,7 @@ import 'package:app/widget/widgets_index.dart';
 import 'package:flutter/material.dart';
 import 'package:app/res/theme_colors.dart';
 
+
 /*
  * 新企业注册页面
  **/
@@ -106,7 +107,7 @@ class _RegisterPageState extends State<RegisterPage>
     dio.get(Api.IMAGE_CODE,
         queryParameters: {'width': '255', 'height': '58'}).then((data) {
       var sources = jsonDecode(data.toString());
-      if (sources['error_code'] == "0") {
+      if (sources['error_code'] == Api.SUCCESS_CODE) {
         var captchaBase64 = sources['data']['captcha_base64'];
         var captchaId = sources['data']['captcha_id'];
         showDialog<Null>(
@@ -147,7 +148,7 @@ class _RegisterPageState extends State<RegisterPage>
       },
     ).then((data) {
       var sources = jsonDecode(data.toString());
-      if (sources['error_code'] == "0") {
+      if (sources['error_code'] == Api.SUCCESS_CODE) {
         var tips = sources['data']['tips'];
         this.setState(() {
           _tips = tips;
@@ -172,7 +173,7 @@ class _RegisterPageState extends State<RegisterPage>
       dio.get(Api.IMAGE_CODE,
           queryParameters: {'width': '255', 'height': '58'}).then((data) {
         var sources = jsonDecode(data.toString());
-        if (sources['error_code'] == "0") {
+        if (sources['error_code'] == Api.SUCCESS_CODE) {
           var captchaBase64 = sources['data']['captcha_base64'];
           var captchaId = sources['data']['captcha_id'];
           showDialog<Null>(
@@ -211,7 +212,7 @@ class _RegisterPageState extends State<RegisterPage>
         },
       ).then((data) {
         var sources = jsonDecode(data.toString());
-        if (sources['error_code'] == "0") {
+        if (sources['error_code'] == Api.SUCCESS_CODE) {
           var tips = sources['data']['tips'];
           this.setState(() {
             _tips = tips;

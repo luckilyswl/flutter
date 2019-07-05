@@ -7,7 +7,4 @@ class EventType {
 
   // 退出登录
   static final logout = 'logout';
-
-  //通知餐厅筛选栏更改显示内容
-  static final changeHallFilter = 'changeHallFilter';
 }

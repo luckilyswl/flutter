@@ -46,6 +46,37 @@ class TimeSelectorState extends State<TimeSelectorDialog> {
   int bitIndex = 0;
 
   @override
+  void initState() {
+    super.initState();
+
+    if (ObjectUtil.isEmptyList(widget.dateData) ||
+        ObjectUtil.isEmptyList(widget.timeData) ||
+        ObjectUtil.isEmptyList(widget.bitData)) {
+      return;
+    }
+
+    //遍历得到已经选中的索引
+    for (int i = 0, len = widget.dateData.length; i < len; i++) {
+      if (widget.dateData[i].hasBg) {
+        dateIndex = i;
+        break;
+      }
+    }
+    for (int i = 0, len = widget.timeData.length; i < len; i++) {
+      if (widget.timeData[i].hasBg) {
+        timeIndex = i;
+        break;
+      }
+    }
+    for (int i = 0, len = widget.bitData.length; i < len; i++) {
+      if (widget.bitData[i].hasBg) {
+        bitIndex = i;
+        break;
+      }
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return _buildTimeSelector();
   }

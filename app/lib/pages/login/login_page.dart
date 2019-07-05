@@ -128,7 +128,7 @@ class _LoginPageState extends State<LoginPage>
             }).then((data) {
                 var sources = jsonDecode(data.data);
                 UserInfoBean bean = UserInfoBean.fromJson(sources);
-                if (bean.errorCode == "0") {
+                if (bean.errorCode == Api.SUCCESS_CODE) {
                   if (bean.data.isBindPhone == "1") {
                     Future.delayed(
                       new Duration(milliseconds: 300),
@@ -244,7 +244,11 @@ class _LoginPageState extends State<LoginPage>
       imageName: "assets/images/ic_login_pwd.png",
       rightWidget: SendCodeButton(
         onSendEvent: () {
-          _getPhoneCode();
+          if (_phone.length == 11) {
+            _getPhoneCode();
+          } else {
+            T.Toast.toast(context, '请输入正确手机号');
+          }
         },
         onTimeoutEvent: () {
           setState(() {
@@ -314,7 +318,7 @@ class _LoginPageState extends State<LoginPage>
     ).then((data) {
       var sources = jsonDecode(data.data);
       UserInfoBean bean = UserInfoBean.fromJson(sources);
-      if (bean.errorCode == "0") {
+      if (bean.errorCode == Api.SUCCESS_CODE) {
         Future.delayed(
           new Duration(milliseconds: 300),
           () {
@@ -337,7 +341,7 @@ class _LoginPageState extends State<LoginPage>
       dio.get(Api.IMAGE_CODE,
           queryParameters: {'width': '255', 'height': '58'}).then((data) {
         var sources = jsonDecode(data.toString());
-        if (sources['error_code'] == "0") {
+        if (sources['error_code'] == Api.SUCCESS_CODE) {
           var captchaBase64 = sources['data']['captcha_base64'];
           var captchaId = sources['data']['captcha_id'];
           showDialog<Null>(
@@ -384,7 +388,7 @@ class _LoginPageState extends State<LoginPage>
     ).then((data) {
       var sources = jsonDecode(data.data);
       UserInfoBean bean = UserInfoBean.fromJson(sources);
-      if (bean.errorCode == "0") {
+      if (bean.errorCode == Api.SUCCESS_CODE) {
         Future.delayed(
           new Duration(milliseconds: 300),
           () {

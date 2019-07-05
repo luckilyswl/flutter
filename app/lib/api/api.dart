@@ -5,7 +5,11 @@ class Api{
   //正式环境API地址和KEY---edit by bigticket 2019-06-28
   //static const String BASE_URL = 'https://m2.7shangzuo.com';
   //static const String API_KEY = "8U4qaVZvo20DBjKedL9jQzSwKoNXztAB";
-  
+
+  static const String SUCCESS_CODE = '0';
+  static const String ERROR_IMAGE_CODE = '11001';
+  static const String NEED_LOGIN_CODE = "10001";
+
   // 公共分类
   static const String INIT = '/app/init';  //初始数据
   static const String CUSTOMER_SERVICE = '/app/customerService';  //客户信息
@@ -31,4 +35,8 @@ class Api{
 
   // 我的
   static const String ME_URL = "/app/user/index";
+
+  // 商家詳情
+  static const String DETAIL_URL = "/app/business/detail";
+  static const String ROOM_URL = "/app/business/availableRoomList";
 }

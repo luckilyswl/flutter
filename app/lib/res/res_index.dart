@@ -1,2 +1,3 @@
-export 'package:app/res/gradients.dart';
-export 'package:app/res/theme_colors.dart';
+export 'gradients.dart';
+export 'theme_colors.dart';
+export 'font_styles.dart';

@@ -26,7 +26,6 @@ class _ManagerPageState extends State<ManagerPage>
   bool _isLogin = false;
   TabController _controller;
   int _currentIndex = 0;
-  var _dropList = ['运营部', '设计部', '媒体部', '技术部'];
   var _filterText = "请上座信息科技有限公司";
 
   bool _isShowMask = false;
@@ -397,12 +396,12 @@ class _ManagerPageState extends State<ManagerPage>
                     shrinkWrap: true,
                     padding: const EdgeInsets.all(4.0),
                     primary: false,
-                    mainAxisSpacing: 12.0,
                     // 竖向间距
-                    crossAxisCount: 4,
+                    mainAxisSpacing: 12.0,
                     // 横向 Item 的个数
-                    crossAxisSpacing: 4.0,
+                    crossAxisCount: 4,
                     // 横向间距
+                    crossAxisSpacing: 4.0,
                     children: _buildGridTileList(
                         _options != null ? _options.length : 0),
                   ),

@@ -5,8 +5,8 @@ import 'package:app/http.dart';
 import 'package:app/res/theme_colors.dart';
 import 'package:app/widget/widgets_index.dart';
 
-
 import 'package:flutter/material.dart';
+import 'package:flutter_spinkit/flutter_spinkit.dart';
 
 class CaptchaCard extends StatefulWidget {
   final Function onCloseEvent;
@@ -38,6 +38,8 @@ class _CaptchaCardState extends State<CaptchaCard> {
   String _captchaBase64;
   String _captcha;
 
+  final FocusNode _accountFocusNode = FocusNode();
+
   bool _showError = false;
 
   /// Default max pin length.
@@ -66,7 +68,7 @@ class _CaptchaCardState extends State<CaptchaCard> {
     dio.get(Api.IMAGE_CODE,
         queryParameters: {'width': '255', 'height': '58'}).then((data) {
       var sources = jsonDecode(data.toString());
-      if (sources['error_code'] == "0") {
+      if (sources['error_code'] == Api.SUCCESS_CODE) {
         var captchaBase64 = sources['data']['captcha_base64'];
         var captchaId = sources['data']['captcha_id'];
         setState(() {
@@ -81,6 +83,15 @@ class _CaptchaCardState extends State<CaptchaCard> {
 
   _checkCode() {
     debugPrint('请求发送验证码...');
+    SpinKitFadingCircle(
+      itemBuilder: (_, int index) {
+        return DecoratedBox(
+          decoration: BoxDecoration(
+            color: index.isEven ? Colors.red : Colors.green,
+          ),
+        );
+      },
+    );
     dio.get(Api.SMS_CODE_SEND, queryParameters: {
       'phone': _phone,
       'code_type': SMSCodeType.values.indexOf(_type).toString(),
@@ -88,12 +99,16 @@ class _CaptchaCardState extends State<CaptchaCard> {
       'captcha_id': _captchaId
     }).then((data) {
       var sources = jsonDecode(data.toString());
-      if (sources['error_code'] == "0") {
+      if (sources['error_code'] == Api.SUCCESS_CODE) {
         this._onSuccessEvent();
-      } else {
+      } else if (sources['error_code'] == Api.ERROR_IMAGE_CODE) {
         setState(() {
           _showError = true;
         });
+        _refreshCodeUrl();
+      } else {
+        Toast.toast(context, sources['msg']);
+        _refreshCodeUrl();
       }
     });
   }
@@ -226,6 +241,7 @@ class _CaptchaCardState extends State<CaptchaCard> {
                   child: Container(
                     child: PinInputTextField(
                       pinLength: _pinLength,
+                      focusNode: _accountFocusNode,
                       decoration: BoxLooseDecoration(
                         textStyle: _textStyle,
                         strokeColor: _showError ? Colors.red : _solidColor,
@@ -252,6 +268,7 @@ class _CaptchaCardState extends State<CaptchaCard> {
                             _showError = false;
                           });
                         } else if (_captcha.length == _pinLength) {
+                          _accountFocusNode.unfocus();
                           _checkCode();
                         }
                       },

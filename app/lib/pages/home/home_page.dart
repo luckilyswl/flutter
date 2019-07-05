@@ -6,6 +6,7 @@ import 'package:app/model/search_condition_bean.dart' as SC;
 import 'package:app/api/api.dart';
 import 'package:app/http.dart';
 import 'package:app/widget/hall_filter/hall_link_selector.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:app/utils/utils_index.dart';
 import 'package:app/res/res_index.dart';
@@ -13,6 +14,7 @@ import 'package:app/widget/widgets_index.dart';
 import 'package:app/model/custom_scroll_bean.dart';
 import 'package:app/Application.dart';
 import 'package:app/model/event.dart';
+import 'package:app/pages/pages_index.dart';
 import 'package:app/model/home_info_bean.dart' as HomeInfo;
 import 'package:app/model/home_buiness_list_bean.dart' as BusinessInfo;
 
@@ -173,6 +175,9 @@ class _HomePageState extends State<HomePage>
   //当前餐厅筛选栏PopupWindow是否显示
   bool isHallPopupShow = false;
 
+  //是否为第一次滚动测量组件宽高
+  bool isFirstScrollToMeasure = true;
+
   @override
   void initState() {
     initData();
@@ -274,10 +279,11 @@ class _HomePageState extends State<HomePage>
   }
 
   void initData() {
+    ///首页接口
     dio.get(Api.INDEX_HOME).then((data) {
       var sources = jsonDecode(data.data);
       HomeInfo.HomeInfoBean info = HomeInfo.HomeInfoBean.fromJson(sources);
-      if (info.errorCode == "0"){
+      if (info.errorCode == Api.SUCCESS_CODE) {
         _dataBean = info.data;
         if (_dataBean != null) {
           _searchMotion = _dataBean.indexSearchMotion;
@@ -285,18 +291,34 @@ class _HomePageState extends State<HomePage>
           _isCompany = _dataBean.isCompany == 1;
           _topMenuList = _dataBean.topMenu;
           _quickDataList = _dataBean.quickData;
+
+          Future.delayed(Duration(milliseconds: 200), () {
+            //重新测量餐厅筛选栏offsetTop
+            RenderBox hall = keyHall.currentContext.findRenderObject();
+            Offset offset = hall.localToGlobal(Offset.zero);
+            offsetHallTop = offset.dy - 75;
+
+            //重新测量快速预订/团建高度
+            RenderBox fastBook = keyFastBook.currentContext.findRenderObject();
+            if (_isCompany) {
+              fastBookHeight = fastBook.size.height + 145;
+            } else {
+              fastBookHeight = fastBook.size.height + 38;
+            }
+          });
         }
       } else {
         Toast.toast(context, info.msg);
       }
     });
 
+    ///搜索条件
     dio.get(Api.SEARCH_CONDITIONS).then((data) {
       var sources = jsonDecode(data.toString());
       SC.SearchConditionBean bean = SC.SearchConditionBean.fromJson(sources);
       SC.Data dataBean = bean.data;
 
-      if (bean.errorCode == "0") {
+      if (bean.errorCode == Api.SUCCESS_CODE) {
         setState(() {
           searchConditionData = dataBean;
           areaSelectorBeans = HomeFilterUtils.changeAreaDataToPickerData(
@@ -315,15 +337,17 @@ class _HomePageState extends State<HomePage>
       }
     });
 
+    ///商家列表
     dio.get(Api.BUSINESS_LIST,
         queryParameters: {"page": "1", "page_size": "20"}).then((data) {
-          var sources = jsonDecode(data.data);
-          BusinessInfo.HomeBusinessInfo businessInfo = BusinessInfo.HomeBusinessInfo.fromJson(sources);
-          if (businessInfo != null && businessInfo.errorCode == "0") {
-            _businessList = businessInfo.data.list;
-          } else {
-            Toast.toast(context, businessInfo.msg);
-          }
+      var sources = jsonDecode(data.data);
+      BusinessInfo.HomeBusinessInfo businessInfo =
+          BusinessInfo.HomeBusinessInfo.fromJson(sources);
+      if (businessInfo != null && businessInfo.errorCode == Api.SUCCESS_CODE) {
+        _businessList = businessInfo.data.list;
+      } else {
+        Toast.toast(context, businessInfo.msg);
+      }
     });
   }
 
@@ -331,7 +355,8 @@ class _HomePageState extends State<HomePage>
   List<Widget> _initMainActions() {
     mainActions.clear();
     _topMenuList.forEach((f) {
-      mainActions.add(_buildMainAction(f.imgUrl, f.adName, ()=>_clickTopMenuItem(_topMenuList.indexOf(f))));
+      mainActions.add(_buildMainAction(f.imgUrl, f.adName,
+          () => _clickTopMenuItem(_topMenuList.indexOf(f))));
     });
     return mainActions;
   }
@@ -441,6 +466,23 @@ class _HomePageState extends State<HomePage>
                   _phoneFocusNode.unfocus();
                 }
 
+                if (isFirstScrollToMeasure) {
+                  isFirstScrollToMeasure = false;
+                  //重新测量餐厅筛选栏offsetTop
+                  RenderBox hall = keyHall.currentContext.findRenderObject();
+                  Offset offset = hall.localToGlobal(Offset.zero);
+                  offsetHallTop = offset.dy - 75;
+
+                  //重新测量快速预订/团建高度
+                  RenderBox fastBook =
+                      keyFastBook.currentContext.findRenderObject();
+                  if (_isCompany) {
+                    fastBookHeight = fastBook.size.height + 145;
+                  } else {
+                    fastBookHeight = fastBook.size.height + 38;
+                  }
+                }
+
                 setState(() {
                   ///用渐变色线段处理组件之间默认的距离
                   if (25 < scrollY) {
@@ -453,8 +495,16 @@ class _HomePageState extends State<HomePage>
                   //快速预订显示/隐藏
                   if (fastBookHeight <= scrollY) {
                     isShowFastBookIcon = true;
-                  } else if (131 >= scrollY) {
-                    isShowFastBookIcon = false;
+                  }
+
+                  if (_isCompany) {
+                    if (131 >= scrollY) {
+                      isShowFastBookIcon = false;
+                    }
+                  } else {
+                    if (24 >= scrollY) {
+                      isShowFastBookIcon = false;
+                    }
                   }
 
                   ///处理餐厅栏悬浮问题
@@ -481,18 +531,24 @@ class _HomePageState extends State<HomePage>
                     ),
                   ),
                   _buildSearch(),
-                  _topMenuList != null && _topMenuList.length != 0? SliverToBoxAdapter(
-                    child: Container(
-                      width: double.infinity,
-                      decoration:
-                          BoxDecoration(gradient: Gradients.blueLinearGradient),
-                      height: 107,
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: _initMainActions(),
-                      ),
-                    ),
-                  ) : new SliverToBoxAdapter(child: new Container(height: 0,),),
+                  _topMenuList != null && _topMenuList.length != 0
+                      ? SliverToBoxAdapter(
+                          child: Container(
+                            width: double.infinity,
+                            decoration: BoxDecoration(
+                                gradient: Gradients.blueLinearGradient),
+                            height: 107,
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                              children: _initMainActions(),
+                            ),
+                          ),
+                        )
+                      : new SliverToBoxAdapter(
+                          child: new Container(
+                            height: 0,
+                          ),
+                        ),
                   SliverToBoxAdapter(
                     child: Container(
                       color: Colors.white,
@@ -533,11 +589,13 @@ class _HomePageState extends State<HomePage>
                             crossAxisSpacing: 4,
                             mainAxisSpacing: 14,
 
-                            ///按��例显示
+                            ///按宽高比例显示
                             childAspectRatio: 1.5,
                             physics: NeverScrollableScrollPhysics(),
                             //children: gridItems != null ? gridItems : new List(),
-                            children: _buildGridTileList(_quickDataList != null ? _quickDataList.length : 0),
+                            children: _buildGridTileList(_quickDataList != null
+                                ? _quickDataList.length
+                                : 0),
                           ),
                           SizedBox(height: 20),
                           Container(height: 10, color: ThemeColors.colorF2F2F2),
@@ -588,18 +646,30 @@ class _HomePageState extends State<HomePage>
                             physics: NeverScrollableScrollPhysics(),
                             shrinkWrap: true,
                             itemBuilder: (context, i) {
-                              return ItemHall(
-                                  imgUrl: _businessList[i].imgUrl,
-                                  title: _businessList[i].title,
-                                  price: '￥' + _businessList[i].perPerson + "/人",
-                                  //location: '粤菜 | 广州大道南 · 1.95km',
-                                  location: _businessList[i].dishes + ' | '
-                                      + _businessList[i].zoneName + " · "
-                                      + _businessList[i].distance,
-                                  remark: _businessList[i].shopName);
+                              return new GestureDetector(
+                                  onTap: () {
+                                    _clickRestaurantItem(i);
+                                  },
+                                  child: ItemHall(
+                                      imgUrl: _businessList[i].imgUrl,
+                                      title: _businessList[i].title,
+                                      price: '¥' +
+                                          _businessList[i].perPerson +
+                                          "/人",
+                                      //location: '粤菜 | 广州大道南 · 1.95km',
+                                      location: _businessList[i].dishes +
+                                          ' | ' +
+                                          _businessList[i].zoneName +
+                                          " · " +
+                                          _businessList[i].distance,
+                                      remark: _businessList[i].shopName));
                             },
                             separatorBuilder: (context, i) {
-                              return SizedBox(height: 0);
+                              return Container(
+                                margin: const EdgeInsets.only(left: 144),
+                                height: 1,
+                                color: ThemeColors.colorDEDEDE,
+                              );
                             },
                             itemCount: _businessList.length,
                           ),
@@ -646,11 +716,18 @@ class _HomePageState extends State<HomePage>
     );
   }
 
+  void _clickRestaurantItem(int i) {
+    Navigator.of(context).push(CupertinoPageRoute(builder: (_) {
+      return BusinessDetailPage(_businessList[i].id);
+    }));
+  }
+
   /// 快速菜单网格布局
   List<Widget> _buildGridTileList(int length) {
     List<Widget> widgetList = new List();
     for (int i = 0; i < length; i++) {
-      widgetList.add(_buildGridItem(_quickDataList[i].imgUrl, _quickDataList[i].adName, ()=>_clickQuickMenuItem(i)));
+      widgetList.add(_buildGridItem(_quickDataList[i].imgUrl,
+          _quickDataList[i].adName, () => _clickQuickMenuItem(i)));
     }
     return widgetList;
   }
@@ -758,7 +835,6 @@ class _HomePageState extends State<HomePage>
             ),
             color: ThemeColors.color1A1A1A,
             onPressed: () {
-              debugPrint('_privateBooking');
               if (_tabIndex == 0) {
                 //todo:跳转到商家列表
               } else {
@@ -787,7 +863,7 @@ class _HomePageState extends State<HomePage>
         "name": name
       }).then((data) {
         var sources = jsonDecode(data.toString());
-        if (sources['error_code'] == '0') {
+        if (sources['error_code'] == Api.SUCCESS_CODE) {
           SaveImageToast.toast(context, '已成功提交需求', true);
         } else {
           Toast.toast(context, sources['msg']);
@@ -804,7 +880,7 @@ class _HomePageState extends State<HomePage>
     return SliverPersistentHeader(
       pinned: true,
       floating: true,
-      delegate: _SliverAppBarDelegate(
+      delegate: SliverAppBarDelegate(
         minHeight: 50,
         maxHeight: 50,
         child: Container(
@@ -842,33 +918,38 @@ class _HomePageState extends State<HomePage>
                 ),
               ),
               Expanded(
-                child: Container(
-                  height: 28,
-                  decoration: BoxDecoration(
-                    color: ThemeColors.colorF2F2F2,
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: <Widget>[
-                      SizedBox(
-                        width: 14,
-                        height: 14,
-                        child: Center(
-                          child: Image.asset(
-                            'assets/images/ic_message.png',
-                            width: 9,
-                            height: 9,
-                            fit: BoxFit.fill,
+                child: GestureDetector(
+                  onTap: _clickTopSearch,
+                  child: Container(
+                    height: 28,
+                    decoration: BoxDecoration(
+                      color: ThemeColors.colorF2F2F2,
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: <Widget>[
+                        SizedBox(
+                          width: 14,
+                          height: 14,
+                          child: Center(
+                            child: Image.asset(
+                              'assets/images/ic_message.png',
+                              width: 9,
+                              height: 9,
+                              fit: BoxFit.fill,
+                            ),
                           ),
                         ),
-                      ),
-                      SizedBox(width: 4),
-                      Text(
-                        _searchMotion != null ? _searchMotion + _searchTip : '',
-                        style: style12a6a6a6,
-                      )
-                    ],
+                        SizedBox(width: 4),
+                        Text(
+                          _searchMotion != null
+                              ? _searchMotion + _searchTip
+                              : '',
+                          style: style12a6a6a6,
+                        )
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -891,23 +972,26 @@ class _HomePageState extends State<HomePage>
                       },
                       child: Row(
                         children: <Widget>[
-                          Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: <Widget>[
-                              Image.asset(
-                                'assets/images/ic_message.png',
-                                width: 16,
-                                height: 16,
-                                fit: BoxFit.fill,
-                              ),
-                              SizedBox(height: 2),
-                              Text(
-                                '快速预定',
-                                textAlign: TextAlign.center,
-                                style: const TextStyle(
-                                    fontSize: 8, color: Colors.white),
-                              )
-                            ],
+                          Container(
+                            color: Colors.transparent,
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: <Widget>[
+                                Image.asset(
+                                  'assets/images/ic_message.png',
+                                  width: 16,
+                                  height: 16,
+                                  fit: BoxFit.fill,
+                                ),
+                                SizedBox(height: 2),
+                                Text(
+                                  '快速预定',
+                                  textAlign: TextAlign.center,
+                                  style: const TextStyle(
+                                      fontSize: 8, color: Colors.white),
+                                )
+                              ],
+                            ),
                           ),
                           SizedBox(width: 10)
                         ],
@@ -960,7 +1044,8 @@ class _HomePageState extends State<HomePage>
             width: 45,
             height: 45,
             child: Center(
-              child: Image.network(icon, width: 28, height: 35, fit: BoxFit.fill),
+              child:
+                  Image.network(icon, width: 28, height: 35, fit: BoxFit.fill),
             ),
           ),
           SizedBox(height: 12),
@@ -1359,6 +1444,11 @@ class _HomePageState extends State<HomePage>
 
   ///点击滚动到顶部
   _clickScrollToTop() {
+    //餐厅筛选栏
+    RenderBox hall = keyHall.currentContext.findRenderObject();
+    Offset offset = hall.localToGlobal(Offset.zero);
+    offsetHallTop = offset.dy - 75;
+
     _scrollController.animateTo(offsetHallTop,
         duration: Duration(milliseconds: 100), curve: Curves.easeIn);
   }
@@ -1442,16 +1532,21 @@ class _HomePageState extends State<HomePage>
     Overlay.of(context).insert(overlayCity);
   }
 
+  ///顶部搜索点击事件
+  _clickTopSearch() {
+    Navigator.of(context).pushNamed(Page.SEARCH_PAGE);
+  }
+
   @override
   bool get wantKeepAlive => true;
 }
 
-class _SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
+class SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
   final double minHeight;
   final double maxHeight;
   final Widget child;
 
-  _SliverAppBarDelegate({
+  SliverAppBarDelegate({
     @required this.minHeight,
     @required this.maxHeight,
     @required this.child,
@@ -1470,7 +1565,7 @@ class _SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
   }
 
   @override
-  bool shouldRebuild(_SliverAppBarDelegate oldDelegate) {
+  bool shouldRebuild(SliverAppBarDelegate oldDelegate) {
     return maxHeight != oldDelegate.maxHeight ||
         minHeight != oldDelegate.minHeight ||
         child != oldDelegate.child;

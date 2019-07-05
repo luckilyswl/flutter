@@ -138,7 +138,11 @@ class _BindPageState extends State<BindPage>
       imageName: "assets/images/ic_login_pwd.png",
       rightWidget: SendCodeButton(
         onSendEvent: () {
-          _getPhoneCode();
+          if (_phone.length == 11) {
+            _getPhoneCode();
+          } else {
+            T.Toast.toast(context, '请输入正确手机号');
+          }
         },
         onTimeoutEvent: () {
           setState(() {
@@ -164,15 +168,14 @@ class _BindPageState extends State<BindPage>
     ).then((data) {
       var sources = jsonDecode(data.toString());
       UserInfoBean bean = UserInfoBean.fromJson(sources);
-      if (bean.errorCode == "0") {
+      if (bean.errorCode == Api.SUCCESS_CODE) {
         _showBindSuccessWidget();
         Future.delayed(
-          new Duration(milliseconds: 300),
+          new Duration(milliseconds: 1000),
           () {
             DataUtils.saveLoginInfo(bean);
             Application.getEventBus().fire(EventType.loginSuccess);
             Navigator.of(context).popUntil(ModalRoute.withName(Page.ROOT_PAGE));
-            Navigator.pop(context);
           },
         );
       } else {
@@ -189,7 +192,7 @@ class _BindPageState extends State<BindPage>
     dio.get(Api.IMAGE_CODE,
         queryParameters: {'width': '255', 'height': '58'}).then((data) {
       var sources = jsonDecode(data.toString());
-      if (sources['error_code'] == "0") {
+      if (sources['error_code'] == Api.SUCCESS_CODE) {
         var captchaBase64 = sources['data']['captcha_base64'];
         var captchaId = sources['data']['captcha_id'];
         showDialog<Null>(
