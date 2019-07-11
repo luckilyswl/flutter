@@ -1,20 +1,23 @@
+import 'dart:convert';
+
 import 'package:app/Application.dart';
 import 'package:app/api/api.dart';
 import 'package:app/http.dart';
 import 'package:app/model/event.dart';
+import 'package:app/model/my_info_bean.dart' as MyInfo;
 import 'package:app/model/user_info_bean.dart';
 import 'package:app/navigator/page_route.dart';
+import 'package:app/pages/me/personal_info_page.dart';
+import 'package:app/pages/me/recharge/recharge_page.dart';
 import 'package:app/res/gradients.dart';
 import 'package:app/res/theme_colors.dart';
 import 'package:app/utils/data_utils.dart';
-import 'package:app/utils/shared_preferences.dart';
+import 'package:app/utils/utils_index.dart';
+import 'package:app/widget/action_bar.dart';
 import 'package:app/widget/item_more.dart';
 import 'package:app/widget/red_point.dart';
-import 'package:flutter/material.dart';
-import 'package:app/widget/action_bar.dart';
 import 'package:app/widget/toast.dart';
-import 'dart:convert';
-import 'package:app/model/my_info_bean.dart' as MyInfo;
+import 'package:flutter/material.dart';
 
 /*
  * 我的
@@ -30,12 +33,16 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin {
 
   ///登录卡片
   Widget loginCard;
+
   /// 用户信息
   MyInfo.UserInfoBean _userInfoBean;
+
   /// 用户余额信息
   MyInfo.UserBalanceBean _userBalanceBean;
+
   /// 企业信息
   MyInfo.CompanyInfoBean _companyInfoBean;
+
   /// 企业余额信息
   MyInfo.CompanyBalanceBean _companyBalanceBean;
 
@@ -44,6 +51,7 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin {
   bool isAdmin = false;
   bool isHeader = false;
   String _availableBalance;
+
   /// 充值描述
   String _rechargeDesc;
 
@@ -78,17 +86,18 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin {
             isHeader = _companyInfoBean.isHeader == "1" ? true : false;
             isUser = !(dataBean.isCompany == "1");
             isLogin = true;
-            _availableBalance = isUser ? _userBalanceBean.availableBalance.toString()
+            _availableBalance = isUser
+                ? _userBalanceBean.availableBalance.toString()
                 : _companyBalanceBean.availableBalance.toString();
-            loginCard = _buildLoginedCard(
-                0,
+            loginCard = _buildLoginedCard(0,
                 isUser ? _userInfoBean.nickName : _companyInfoBean.employeeName,
                 company: _companyInfoBean.companyName,
                 department: _companyInfoBean.departmentName,
                 position: _companyInfoBean.isHeader == "1" ? "部门主管" : '',
-                phone: isUser ? _userInfoBean.bindPhone : _companyInfoBean.telphone,
-                isUpdated: true
-            );
+                phone: isUser
+                    ? _userInfoBean.bindPhone
+                    : _companyInfoBean.telphone,
+                isUpdated: true);
           });
         }
       });
@@ -97,7 +106,8 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin {
 
   void initEventBus() {
     Application.getEventBus().on<String>().listen((event) {
-      if (event == EventType.loginSuccess) {
+      if (event == EventType.loginSuccess ||
+          event == EventType.personalInfoEdit) {
         initData();
       } else if (event == EventType.logout) {
         if (this.mounted) {
@@ -243,10 +253,32 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin {
 
     return Stack(
       children: <Widget>[
-        Container(
-          alignment: Alignment.topRight,
-          child: Image.asset('assets/images/ic_me_change.png',
-              width: 45, height: 45),
+        new GestureDetector(
+          onTap: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) {
+                  return PersonalInfoPage(
+                    name: isUser
+                        ? _userInfoBean.nickName
+                        : _companyInfoBean.employeeName,
+                    phone: isUser
+                        ? _userInfoBean.bindPhone
+                        : _companyInfoBean.telphone,
+                    company: isUser ? '' : _companyInfoBean.companyName,
+                    department: isUser ? '' : _companyInfoBean.departmentName,
+                    position: isUser ? '' : _companyInfoBean.headerRoleName,
+                    isUser: isUser,
+                  );
+                },
+              ),
+            );
+          },
+          child: Container(
+            alignment: Alignment.topRight,
+            child: Image.asset('assets/images/ic_me_change.png',
+                width: 45, height: 45),
+          ),
         ),
         Container(
           padding: const EdgeInsets.only(left: 18),
@@ -264,29 +296,38 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin {
                       color: Colors.black,
                     ),
                   ),
-                  isAdmin ? Container(
-                    margin: const EdgeInsets.only(top: 1, left: 16),
-                    padding:
-                        EdgeInsets.only(top: 3, bottom: 3, left: 10, right: 10),
-                    child: Text(
-                      '管理员',
-                      style: const TextStyle(
-                          color: ThemeColors.color583B04, fontSize: 10),
-                    ),
-                    decoration: BoxDecoration(
-                        gradient: Gradients.goldLightLinearGradient,
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(
-                          width: 1,
-                          color: ThemeColors.colorD9AE5E,
-                        )),
-                  ) : new SizedBox(width: 0,),
+                  isAdmin
+                      ? Container(
+                          margin: const EdgeInsets.only(top: 1, left: 16),
+                          padding: EdgeInsets.only(
+                              top: 3, bottom: 3, left: 10, right: 10),
+                          child: Text(
+                            '管理员',
+                            style: const TextStyle(
+                                color: ThemeColors.color583B04, fontSize: 10),
+                          ),
+                          decoration: BoxDecoration(
+                              gradient: Gradients.goldLightLinearGradient,
+                              borderRadius: BorderRadius.circular(14),
+                              border: Border.all(
+                                width: 1,
+                                color: ThemeColors.colorD9AE5E,
+                              )),
+                        )
+                      : new SizedBox(
+                          width: 0,
+                        ),
                 ],
               ),
               Container(
                 alignment: Alignment.centerLeft,
                 margin: EdgeInsets.only(top: (isUser ? 0 : 15)),
-                child: isUser ? new SizedBox(height: 0) : Text(company, style: textStyle,),
+                child: isUser
+                    ? new SizedBox(height: 0)
+                    : Text(
+                        company,
+                        style: textStyle,
+                      ),
               ),
               SizedBox(
                 height: 10,
@@ -331,33 +372,29 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin {
   Widget _buildMoreAction() {
     var listTiles = [
       ItemMore.buildItemMore(
-        'assets/images/ic_message.png',
+        'assets/images/ic_me_phone.png',
         '联系客服',
-        'assets/images/ic_more.png',
+        'assets/images/ic_me_more.png',
         () => Toast.toast(context, '联系客服'),
       ),
       ItemMore.buildItemMore(
-        'assets/images/ic_edit.png',
+        'assets/images/ic_me_feedback.png',
         '意见反馈',
-        'assets/images/ic_more.png',
-        () => Toast.toast(context, '意见反馈'),
+        'assets/images/ic_me_more.png',
+        () => Navigator.of(context).pushNamed(Page.FEEDBACK_PAGE),
       ),
-      ItemMore.buildItemMore(
-        'assets/images/ic_edit.png',
-        '设置',
-        'assets/images/ic_more.png',
-        () => _setting()
-      ),
+      ItemMore.buildItemMore('assets/images/ic_me_setting.png', '设置',
+          'assets/images/ic_me_more.png', () => _setting()),
     ];
 
     if (isLogin) {
       listTiles.insert(
           1,
           ItemMore.buildItemMore(
-            'assets/images/ic_edit.png',
+            'assets/images/ic_me_collect.png',
             '我的收藏',
-            'assets/images/ic_more.png',
-            () => Toast.toast(context, '我的收藏'),
+            'assets/images/ic_me_more.png',
+            () => Navigator.of(context).pushNamed(Page.MY_COLLECT_PAGE),
           ));
     }
 
@@ -389,12 +426,6 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin {
           showRedPoint: false),
       _buildMyOrderItem('assets/images/ic_daimaidan.png', '待买单',
           () => Toast.toast(context, '待买单'),
-          showRedPoint: false),
-      _buildMyOrderItem('assets/images/ic_qianbao.png', '待付款',
-          () => Toast.toast(context, '待付款'),
-          showRedPoint: false),
-      _buildMyOrderItem('assets/images/ic_qianbao.png', '待付款',
-          () => Toast.toast(context, '待付款'),
           showRedPoint: false),
     ];
 
@@ -430,7 +461,7 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin {
                           style: const TextStyle(
                               color: ThemeColors.color9B9B9B, fontSize: 12),
                         ),
-                        Image.asset('assets/images/ic_more.png',
+                        Image.asset('assets/images/ic_me_more.png',
                             width: 16, height: 16)
                       ],
                     ),
@@ -445,15 +476,27 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin {
           ),
           Container(
             height: 94,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              itemBuilder: (context, i) => orderList[i],
-              separatorBuilder: (context, i) => Container(
-                    width: 1,
-                    height: double.infinity,
-                    color: ThemeColors.colorE3E3E3,
-                  ),
-              itemCount: orderList.length,
+            width: ScreenUtil.getScreenW(context),
+            color: Colors.white,
+            child: Row(
+              children: <Widget>[
+                ListView.separated(
+                  shrinkWrap: true,
+                  scrollDirection: Axis.horizontal,
+                  itemBuilder: (context, i) => orderList[i],
+                  separatorBuilder: (context, i) => Container(
+                        width: 1,
+                        height: 94,
+                        color: ThemeColors.colorE3E3E3,
+                      ),
+                  itemCount: orderList.length,
+                ),
+                Container(
+                  width: 1,
+                  height: 94,
+                  color: ThemeColors.colorE3E3E3,
+                )
+              ],
             ),
           ),
         ],
@@ -493,7 +536,7 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin {
                         style: const TextStyle(
                             color: ThemeColors.color9B9B9B, fontSize: 12),
                       ),
-                      Image.asset('assets/images/ic_more.png',
+                      Image.asset('assets/images/ic_me_more.png',
                           width: 16, height: 16)
                     ],
                   ),
@@ -509,50 +552,49 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin {
         Container(
           color: Colors.white,
           height: 90,
-          child: Stack(
-            alignment: Alignment.center,
+          child: Flex(
+            direction: Axis.horizontal,
             children: <Widget>[
-              Row(
-                children: <Widget>[
-                  SizedBox(
-                    width: 30,
-                  ),
-                  Text(
-                    _availableBalance.toString(),
-                    style: const TextStyle(
-                        color: ThemeColors.colorD39857, fontSize: 28),
-                  ),
-                  SizedBox(
-                    width: 4,
-                  ),
-                  Container(
-                    alignment: Alignment.bottomRight,
-                    margin: const EdgeInsets.only(bottom: 35),
-                    child: Text(
-                      '元',
-                      style: const TextStyle(
-                          color: ThemeColors.color222222, fontSize: 12),
+              Flexible(
+                flex: 1,
+                child: Row(
+                  children: <Widget>[
+                    SizedBox(
+                      width: 30,
                     ),
-                  ),
-                ],
+                    Text(
+                      _availableBalance.toString(),
+                      style: const TextStyle(
+                          color: ThemeColors.colorD39857, fontSize: 28),
+                    ),
+                    SizedBox(
+                      width: 4,
+                    ),
+                    Container(
+                      alignment: Alignment.bottomRight,
+                      margin: const EdgeInsets.only(bottom: 35),
+                      child: Text(
+                        '元',
+                        style: const TextStyle(
+                            color: ThemeColors.color222222, fontSize: 12),
+                      ),
+                    ),
+                  ],
+                ),
               ),
               Container(
-                alignment: Alignment.center,
                 width: 1,
                 color: ThemeColors.colorDCDCDC,
                 height: 30,
               ),
-              Align(
-                alignment: Alignment.centerRight,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: <Widget>[
-                    Container(
-                      height: 21,
-                    ),
-                    Container(
-                      margin: const EdgeInsets.only(right: 42),
-                      child: GestureDetector(
+              Flexible(
+                flex: 1,
+                child: SizedBox(
+                  width: ScreenUtil.getScreenW(context) / 2 - 1,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: <Widget>[
+                      GestureDetector(
                         onTap: _clickRecharge,
                         child: Container(
                           width: 104,
@@ -585,19 +627,14 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin {
                           ),
                         ),
                       ),
-                    ),
-                    Container(
-                      height: 11,
-                    ),
-                    Container(
-                      margin: const EdgeInsets.only(right: 29),
-                      child: Text(
+                      SizedBox(height: 11),
+                      Text(
                         _rechargeDesc,
                         style: const TextStyle(
                             color: ThemeColors.color583B04, fontSize: 10),
                       ),
-                    )
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ],
@@ -655,12 +692,12 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin {
 
   ///查看全部订单点击事件
   void _clickAllOrder() {
-    Toast.toast(context, '敬请期待');
+    Navigator.of(context).pushNamed(Page.ORDER_LIST_PAGE);
   }
 
   ///余额明细
   void _clickBalanceDetail() {
-    Toast.toast(context, '敬请期待');
+    Navigator.of(context).pushNamed(Page.BALANCE_DETAIL_PAGE);
   }
 
   ///登录按钮点击事件
@@ -672,11 +709,19 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin {
 
   ///立即充值点击事件
   void _clickRecharge() {
-    Toast.toast(context, '敬请期待');
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) {
+          return RechagrePage(
+            orderId: 0,
+          );
+        },
+      ),
+    );
   }
 
   void _setting() {
-    Navigator.of(context).pushNamed(Page.SETTING_PAGE);
+    Navigator.of(context).pushNamed(Page.SETTING_PAGE, arguments: isLogin);
   }
 
   @override

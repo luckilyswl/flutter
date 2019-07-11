@@ -161,7 +161,7 @@ class _BindPageState extends State<BindPage>
     _codeFocusNode.unfocus();
     dio.post(
       Api.TELPHONE_BIND,
-      queryParameters: {
+      data: {
         'phone': _phone,
         'code': _code,
       },

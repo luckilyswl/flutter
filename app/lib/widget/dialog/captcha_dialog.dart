@@ -299,7 +299,7 @@ class CaptchaDialog extends Dialog {
   final SMSCodeType type;
   final String captchaId;
   final String captchaBase64;
-
+ 
   CaptchaDialog(
       {Key key,
       @required this.onCloseEvent,

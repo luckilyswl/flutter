@@ -1,9 +1,18 @@
 import 'package:app/res/res_index.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 class PayBillExtraWidget extends StatelessWidget {
   final String subTitle;
-  const PayBillExtraWidget({Key key, this.subTitle}) : super(key: key);
+  final ValueChanged<bool> onChanged;
+  final bool isOpen;
+
+  const PayBillExtraWidget(
+      {Key key,
+      @required this.subTitle,
+      @required this.onChanged,
+      @required this.isOpen})
+      : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -36,9 +45,15 @@ class PayBillExtraWidget extends StatelessWidget {
           ),
           Container(
             margin: EdgeInsets.only(left: 14),
-            color: ThemeColors.color404040,
             width: 51,
             height: 28,
+            child: CupertinoSwitch(
+              activeColor: ThemeColors.colorF2C785,
+              value: isOpen,
+              onChanged: (bool value) {
+                onChanged(value);
+              },
+            ),
           ),
         ],
       ),

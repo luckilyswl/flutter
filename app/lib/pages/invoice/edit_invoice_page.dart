@@ -1,8 +1,18 @@
+import 'dart:convert';
+
+import 'package:app/Application.dart';
+import 'package:app/api/api.dart';
+import 'package:app/http.dart';
+import 'package:app/model/event.dart';
+import 'package:app/model/invoice/invoice_list_bean.dart';
 import 'package:app/navigator/page_route.dart';
 import 'package:app/res/res_index.dart';
+import 'package:app/widget/invoice/invoice_input_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:app/res/theme_colors.dart';
 import 'package:flutter/painting.dart';
+import 'package:app/widget/save_image_toast.dart' as Toast;
+import 'package:app/widget/toast.dart' as T;
 
 /*
  * 发票编辑页面
@@ -14,8 +24,10 @@ class InvoiceEditPage extends StatefulWidget {
 
 class _InvoiceEditPageState extends State<InvoiceEditPage>
     with SingleTickerProviderStateMixin {
-  bool _canEdit;
+  bool _buttonEnable;
   List<Map<String, dynamic>> _titles;
+
+  InvoiceModel invoiceModel;
 
   //填写信息
   TextEditingController _nameEditController;
@@ -32,67 +44,62 @@ class _InvoiceEditPageState extends State<InvoiceEditPage>
   final FocusNode _accountFocusNode = FocusNode();
   TextEditingController _taxEditController;
   final FocusNode _taxFocusNode = FocusNode();
-  
-  
+
   @override
   void initState() {
-    _canEdit = true;
+    _buttonEnable = true;
 
     _nameEditController = TextEditingController();
-    _nameEditController.text = "深圳我不去餐饮连锁有限公司";
     _nameEditController.addListener(() {
-      
+      _checkButtonState();
     });
 
     _addressEditController = TextEditingController();
-    _addressEditController.text = "广州市海珠区广州大道南1601号洋湾岛B区三楼317至319";
     _addressEditController.addListener(() {
-      
+      _checkButtonState();
     });
 
     _phoneEditController = TextEditingController();
-    _phoneEditController.text = "135 6512 3546";
     _phoneEditController.addListener(() {
-      
+      _checkButtonState();
     });
 
     _bankEditController = TextEditingController();
-    _bankEditController.text = "广州海珠支行";
     _bankEditController.addListener(() {
-      
+      _checkButtonState();
     });
 
     _accountEditController = TextEditingController();
-    _accountEditController.text = "6228 4812 6824 8914 675";
-    
     _accountEditController.addListener(() {
-      
+      _checkButtonState();
     });
 
     _taxEditController = TextEditingController();
-    _taxEditController.text = "9144010MA5AKYNN11";
     _taxEditController.addListener(() {
-      
+      _checkButtonState();
     });
 
     _emailEditController = TextEditingController();
-    _emailEditController.text = "ryan@7shangzuo.com";
     _emailEditController.addListener(() {
-      
+      _checkButtonState();
     });
 
-    _titles = <Map<String, dynamic>>[
-      {"title": "抬头类型", "subTitle": "单位"},
-      {"title": "名称", "subTitle": "深圳我不去餐饮连锁有限公司", "hint": "单位名称(必填)", "controller": _nameEditController, "node": _nameFocusNode},
-      {"title": "税号", "subTitle": "56WEFXC5894W2CQ", "hint": "纳税人识别号", "controller": _taxEditController, "node": _taxFocusNode},
-      {"title": "单位地址", "subTitle": "深圳市福田区", "hint": "单位地址信息", "controller": _addressEditController, "node": _addressFocusNode},
-      {"title": "电话号码", "subTitle": "135 6512 3546", "hint": "电话号码", "controller": _phoneEditController, "node": _phoneFocusNode},
-      {"title": "开户银行", "subTitle": "深圳福田支行", "hint": "开户银行名称", "controller": _bankEditController, "node": _bankFocusNode},
-      {"title": "银行账户", "subTitle": "6228 4812 6824 8914 675", "hint": "银行账户号码", "controller": _accountEditController, "node": _accountFocusNode},
-      {"title": "邮箱", "subTitle": "wobuqu@qq.com", "hint": "邮箱", "controller": _emailEditController, "node": _emailFocusNode}
-    ];
-
     super.initState();
+  }
+
+  _checkButtonState() {
+    if (invoiceModel.taxNumber.length > 0) {
+      setState(() {
+        _buttonEnable = _nameEditController.text.length > 0 &&
+            _emailEditController.text.length > 0 &&
+            _taxEditController.text.length > 0;
+      });
+    } else {
+      setState(() {
+        _buttonEnable = _nameEditController.text.length > 0 &&
+            _emailEditController.text.length > 0;
+      });
+    }
   }
 
   @override
@@ -101,106 +108,99 @@ class _InvoiceEditPageState extends State<InvoiceEditPage>
   }
 
   _saveInvoice() {
-    debugPrint('保存抬头');
+    Map<String, dynamic> queryParameters = {};
+    queryParameters["invoice_id"] = invoiceModel.id.toString();
+    if (invoiceModel.taxNumber.length > 0) {
+      queryParameters["invoice_type"] = '1';
+      queryParameters["tax_title"] = _nameEditController.text;
+      queryParameters["email"] = _emailEditController.text;
+      queryParameters["tax_number"] = _taxEditController.text;
+      if (_addressEditController.text.length > 0) {
+        queryParameters["company_address"] = _addressEditController.text;
+      }
+      if (_phoneEditController.text.length > 0) {
+        queryParameters["telphone"] = _phoneEditController.text;
+      }
+      if (_bankEditController.text.length > 0) {
+        queryParameters["bank_name"] = _bankEditController.text;
+      }
+      if (_accountEditController.text.length > 0) {
+        queryParameters["bank_account"] = _accountEditController.text;
+      }
+    } else {
+      queryParameters["invoice_type"] = '0';
+      queryParameters["tax_title"] = _nameEditController.text;
+      queryParameters["email"] = _emailEditController.text;
+    }
+    dio.post(Api.INVOICE_EDIT, data: queryParameters).then((data) {
+      var sources = jsonDecode(data.data);
+      if (sources['error_code'] == Api.SUCCESS_CODE) {
+        Toast.SaveImageToast.toast(context, "编辑成功", true);
+        Future.delayed(
+          new Duration(milliseconds: 1000),
+          () {
+            Application.getEventBus().fire(EventType.changeInvoiceList);
+            Navigator.of(context).popUntil(ModalRoute.withName(Page.INVOICE_LIST_PAGE));
+          },
+        );
+      } else {
+        T.Toast.toast(context, sources['msg']);
+      }
+    });
   }
 
-  _editWidget(String title, String hint, TextEditingController controller, FocusNode node) {
-    return Container(
-      height: 50,
-      color: Colors.white,
-      child: Container(
-        margin: EdgeInsets.only(left: 14),
-        decoration: ShapeDecoration(
-          shape: UnderlineInputBorder(
-              borderSide: BorderSide(
-                  color: Color(0xFFDEDEDE), style: BorderStyle.solid)),
-        ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: <Widget>[
-            Container(
-              width: 70,
-              child: Text(
-                title,
-                style: TextStyle(
-                  color: ThemeColors.color404040,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ),
-            Expanded(
-              child: Container(
-                margin: EdgeInsets.only(right: 14),
-                child: TextField(
-                  controller: controller,
-                  focusNode: node,
-                  obscureText: false,
-                  keyboardType: TextInputType.text,
-                  decoration: InputDecoration(
-                    hintText: hint,
-                    hintStyle: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w400,
-                      color: Color(0xFFA6A6A6),
-                    ),
-                    border: InputBorder.none,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
+  _editWidget(String title, String hint, TextEditingController controller,
+      FocusNode node, bool isMutil) {
+    return InvoiceInputWidget(
+        title: title,
+        hint: hint,
+        controller: controller,
+        node: node,
+        isMutil: isMutil);
   }
 
   _buttonGroupWidget() {
-    return _canEdit
-        ? Container(
-            margin: EdgeInsets.only(top: 35, left: 14, right: 14),
-            child: Column(
-              children: <Widget>[
-                Container(
-                  height: 50,
-                  child: FlatButton(
-                    padding: new EdgeInsets.fromLTRB(0.0, 0.0, 0.0, 0.0),
-                    child: Container(
-                      alignment: Alignment.center,
-                      child: Text('保存',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.normal,
-                          )),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(4.0),
-                        gradient: LinearGradient(
-                          begin: Alignment.centerRight,
-                          end: Alignment.centerLeft,
-                          colors: [Color(0xFF404040), Color(0xFF404040)],
-                        ),
-                      ),
-                    ),
-                    onPressed: (() {
-                      _saveInvoice();
-                    }),
-                    textTheme: ButtonTextTheme.normal,
-                    disabledTextColor: ThemeColors.color404040,
-                    textColor: Colors.white,
-                    // 按下的背景��
-                    splashColor: Colors.transparent,
-                    // ��波纹颜色
-                    colorBrightness: Brightness.dark,
-                    // 主题
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(4)),
+    return Container(
+      margin: EdgeInsets.only(top: 35, left: 14, right: 14),
+      child: Column(
+        children: <Widget>[
+          Container(
+            height: 50,
+            child: FlatButton(
+              padding: new EdgeInsets.fromLTRB(0.0, 0.0, 0.0, 0.0),
+              child: Container(
+                alignment: Alignment.center,
+                child: Text('保存',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.normal,
+                    )),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(4.0),
+                  gradient: LinearGradient(
+                    begin: Alignment.centerRight,
+                    end: Alignment.centerLeft,
+                    colors: [Color(0xFF404040), Color(0xFF404040)],
                   ),
                 ),
-              ],
+              ),
+              onPressed: _saveInvoice,
+              textTheme: ButtonTextTheme.normal,
+              disabledTextColor: ThemeColors.color404040,
+              textColor: Colors.white,
+              // 按下的背景��
+              splashColor: Colors.transparent,
+              // ��波纹颜色
+              colorBrightness: Brightness.dark,
+              // 主题
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(4)),
             ),
-          )
-        : Container();
+          ),
+        ],
+      ),
+    );
   }
 
   _normalWidget(String title, String subTitle) {
@@ -244,30 +244,118 @@ class _InvoiceEditPageState extends State<InvoiceEditPage>
     );
   }
 
+  List<Widget> getListWidgets() {
+    List<Widget> listWidgets = <Widget>[];
+    listWidgets.add(
+        _normalWidget('抬头类型', invoiceModel.taxNumber.length > 0 ? '单位' : '个人'));
+    _titles.forEach((v) {
+      listWidgets.add(_editWidget(
+          v["title"], v["hint"], v["controller"], v["node"], v["mutil"]));
+    });
+    listWidgets.add(_buttonGroupWidget());
+    return listWidgets;
+  }
+
   _getListContent() {
     return ListView.builder(
       padding: EdgeInsets.all(0),
-      itemCount: _titles.length + 1,
+      itemCount: getListWidgets().length,
       itemBuilder: (BuildContext context, int index) {
-        if (index == 0) {
-          return _normalWidget(_titles[index]["title"], _titles[index]["subTitle"]);
-        } else if (index == _titles.length) {
-          return _buttonGroupWidget();
-        } else {
-          return _editWidget(
-              _titles[index]["title"], _titles[index]["hint"],_titles[index]["controller"],_titles[index]["node"]);
-        }
+        return getListWidgets()[index];
       },
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    /*获取传递过来的参数*/
+    InvoiceModel invoiceInfo = ModalRoute.of(context).settings.arguments;
+    if (invoiceModel == null && invoiceInfo != null) {
+      invoiceModel = invoiceInfo;
+
+      _nameEditController.text = invoiceModel.taxTitle;
+      _emailEditController.text = invoiceModel.email;
+      if (invoiceModel.taxNumber.length > 0) {
+        _addressEditController.text = invoiceModel.companyAddress;
+        _phoneEditController.text = invoiceModel.telphone;
+        _bankEditController.text = invoiceModel.bankName;
+        _accountEditController.text = invoiceModel.bankAccount;
+        _taxEditController.text = invoiceModel.taxNumber;
+        _titles = <Map<String, dynamic>>[
+          {
+            "title": "名称",
+            "hint": "单位名称(必填)",
+            "controller": _nameEditController,
+            "node": _nameFocusNode,
+            "mutil": false,
+          },
+          {
+            "title": "税号",
+            "hint": "纳税人识别号",
+            "controller": _taxEditController,
+            "node": _taxFocusNode,
+            "mutil": false,
+          },
+          {
+            "title": "单位地址",
+            "hint": "单位地址信息",
+            "controller": _addressEditController,
+            "node": _addressFocusNode,
+            "mutil": true,
+          },
+          {
+            "title": "电话号码",
+            "hint": "电话号码",
+            "controller": _phoneEditController,
+            "node": _phoneFocusNode,
+            "mutil": false,
+          },
+          {
+            "title": "开户银行",
+            "hint": "开户银行名称",
+            "controller": _bankEditController,
+            "node": _bankFocusNode,
+            "mutil": false,
+          },
+          {
+            "title": "银行账户",
+            "hint": "银行账户号码",
+            "controller": _accountEditController,
+            "node": _accountFocusNode,
+            "mutil": false,
+          },
+          {
+            "title": "邮箱",
+            "hint": "邮箱",
+            "controller": _emailEditController,
+            "node": _emailFocusNode,
+            "mutil": false,
+          }
+        ];
+      } else {
+        _titles = <Map<String, dynamic>>[
+          {
+            "title": "名称",
+            "hint": "姓名(必填)",
+            "controller": _nameEditController,
+            "node": _nameFocusNode,
+            "mutil": false,
+          },
+          {
+            "title": "邮箱",
+            "hint": "邮箱",
+            "controller": _emailEditController,
+            "node": _emailFocusNode,
+            "mutil": false,
+          }
+        ];
+      }
+    }
     return Scaffold(
       appBar: PreferredSize(
         child: Container(
           child: AppBar(
-            title: Text('编辑发票抬头'),
+            title: Text('编辑抬头'),
             backgroundColor: Colors.transparent,
             elevation: 0.0,
           ),

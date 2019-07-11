@@ -1,7 +1,5 @@
-import 'package:flutter/material.dart';
 import 'package:app/res/res_index.dart';
-import 'package:app/widget/widgets_index.dart';
-import 'package:app/utils/utils_index.dart';
+import 'package:flutter/material.dart';
 
 /*
  * 精选菜单 Widget 
@@ -11,7 +9,7 @@ class BusinessMenu extends StatefulWidget {
 
   VoidCallback callback;
 
-  BusinessMenu({@required this.menu, @required this.callback});
+  BusinessMenu({this.menu, this.callback});
 
   @override
   State<StatefulWidget> createState() {
@@ -45,19 +43,24 @@ class BusinessMenuState extends State<BusinessMenu> {
           ),
           SizedBox(height: 8),
           Text(
-            widget.menu?.numPeople,
+            '(${widget.menu?.numPeople}人)',
             style: FontStyles.style12A6A6A6,
           ),
-          SizedBox(height: 14),
+          SizedBox(height: 6),
           ListView.separated(
+            physics: NeverScrollableScrollPhysics(),
             padding: const EdgeInsets.all(0),
             scrollDirection: Axis.vertical,
             shrinkWrap: true,
             itemBuilder: (context, i) {
+              if (0 == widget.menu.menus.length ||
+                  (2 > widget.menu.menus.length && 1 == i)) {
+                return SizedBox();
+              }
               return IntrinsicHeight(
                 child: Container(
+                  height: 20,
                   alignment: Alignment.center,
-                  margin: const EdgeInsets.only(top: 8),
                   child: Text(
                     widget.menu?.menus[i],
                     style: FontStyles.style10404040,
@@ -73,7 +76,7 @@ class BusinessMenuState extends State<BusinessMenu> {
           widget.menu.isExpanded ? SizedBox(height: 8) : SizedBox(),
           widget.menu.isExpanded
               ? Text(
-                  '¥${widget.menu?.perPrice}/位',
+                  '${widget.menu?.perPrice}',
                   style: FontStyles.style10D39857,
                 )
               : SizedBox(),
@@ -85,23 +88,27 @@ class BusinessMenuState extends State<BusinessMenu> {
               });
               widget.callback();
             },
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: <Widget>[
-                Text(
-                  widget.menu.isExpanded ? '收起' : '展开',
-                  style: FontStyles.style10A6A6A6,
-                ),
-                SizedBox(width: 5),
-                Image.asset(
-                  widget.menu.isExpanded
-                      ? 'assets/images/ic_up_g.png'
-                      : 'assets/images/ic_down_g.png',
-                  width: 10,
-                  height: 12,
-                  fit: BoxFit.fill,
-                ),
-              ],
+            child: Container(
+              height: 15,
+              color: Colors.transparent,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: <Widget>[
+                  Text(
+                    widget.menu.isExpanded ? '收起' : '展开',
+                    style: FontStyles.style10A6A6A6,
+                  ),
+                  SizedBox(width: 5),
+                  Image.asset(
+                    widget.menu.isExpanded
+                        ? 'assets/images/ic_up_g.png'
+                        : 'assets/images/ic_down_g.png',
+                    width: 10,
+                    height: 12,
+                    fit: BoxFit.fill,
+                  ),
+                ],
+              ),
             ),
           ),
           SizedBox(height: 14),
@@ -114,7 +121,7 @@ class BusinessMenuState extends State<BusinessMenu> {
 class MenuModel {
   String title;
   String numPeople;
-  double perPrice;
+  String perPrice;
   double minHeight;
   double maxHeight;
   List<String> menus;
@@ -125,8 +132,8 @@ class MenuModel {
       @required this.numPeople,
       @required this.perPrice,
       @required this.menus,
-      @required this.isExpanded,
-      this.minHeight,
+      this.isExpanded = false,
+      this.minHeight = 150,
       this.maxHeight});
 
   MenuModel.fromJson(Map<String, dynamic> json) {

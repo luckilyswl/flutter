@@ -25,16 +25,16 @@ class SearchConditionBean {
 class Data {
   List<Areas> areas;
   List<Date> date;
-  Devices devices;
+  MoreOption devices;
   List<Dishes> dishes;
-  DistanceOrder distanceOrder;
-  Environment environment;
+  MoreOption distanceOrder;
+  MoreOption environment;
   List<String> moreFilter;
   List<int> numbers;
-  PriceOption priceOption;
-  PriceOrder priceOrder;
-  RoomType roomType;
-  Scene scene;
+  MoreOption priceOption;
+  MoreOption priceOrder;
+  MoreOption roomType;
+  MoreOption scene;
   List<String> time;
 
   Data(
@@ -65,8 +65,9 @@ class Data {
         date.add(new Date.fromJson(v));
       });
     }
-    devices =
-        json['devices'] != null ? new Devices.fromJson(json['devices']) : null;
+    devices = json['devices'] != null
+        ? new MoreOption.fromJson(json['devices'])
+        : null;
     if (json['dishes'] != null) {
       dishes = new List<Dishes>();
       json['dishes'].forEach((v) {
@@ -74,23 +75,24 @@ class Data {
       });
     }
     distanceOrder = json['distance_order'] != null
-        ? new DistanceOrder.fromJson(json['distance_order'])
+        ? new MoreOption.fromJson(json['distance_order'])
         : null;
     environment = json['environment'] != null
-        ? new Environment.fromJson(json['environment'])
+        ? new MoreOption.fromJson(json['environment'])
         : null;
     moreFilter = json['more_filter'].cast<String>();
     numbers = json['numbers'].cast<int>();
     priceOption = json['price_option'] != null
-        ? new PriceOption.fromJson(json['price_option'])
+        ? new MoreOption.fromJson(json['price_option'])
         : null;
     priceOrder = json['price_order'] != null
-        ? new PriceOrder.fromJson(json['price_order'])
+        ? new MoreOption.fromJson(json['price_order'])
         : null;
     roomType = json['room_type'] != null
-        ? new RoomType.fromJson(json['room_type'])
+        ? new MoreOption.fromJson(json['room_type'])
         : null;
-    scene = json['scene'] != null ? new Scene.fromJson(json['scene']) : null;
+    scene =
+        json['scene'] != null ? new MoreOption.fromJson(json['scene']) : null;
     time = json['time'].cast<String>();
   }
 
@@ -206,14 +208,14 @@ class Date {
   }
 }
 
-class Devices {
+class MoreOption {
   List<Items> items;
   int multiple;
   String name;
 
-  Devices({this.items, this.multiple, this.name});
+  MoreOption({this.items, this.multiple, this.name});
 
-  Devices.fromJson(Map<String, dynamic> json) {
+  MoreOption.fromJson(Map<String, dynamic> json) {
     if (json['items'] != null) {
       items = new List<Items>();
       json['items'].forEach((v) {
@@ -282,199 +284,6 @@ class Dishes {
     if (this.subItems != null) {
       data['sub_items'] = this.subItems.map((v) => v.toJson()).toList();
     }
-    return data;
-  }
-}
-
-class DistanceOrder {
-  List<DistanceItems> items;
-  int multiple;
-  String name;
-
-  DistanceOrder({this.items, this.multiple, this.name});
-
-  DistanceOrder.fromJson(Map<String, dynamic> json) {
-    if (json['items'] != null) {
-      items = new List<DistanceItems>();
-      json['items'].forEach((v) {
-        items.add(new DistanceItems.fromJson(v));
-      });
-    }
-    multiple = json['multiple'];
-    name = json['name'];
-  }
-
-  Map<String, dynamic> toJson() {
-    final Map<String, dynamic> data = new Map<String, dynamic>();
-    if (this.items != null) {
-      data['items'] = this.items.map((v) => v.toJson()).toList();
-    }
-    data['multiple'] = this.multiple;
-    data['name'] = this.name;
-    return data;
-  }
-}
-
-class DistanceItems {
-  int value;
-  String text;
-
-  DistanceItems({this.value, this.text});
-
-  DistanceItems.fromJson(Map<String, dynamic> json) {
-    value = json['value'];
-    text = json['text'];
-  }
-
-  Map<String, dynamic> toJson() {
-    final Map<String, dynamic> data = new Map<String, dynamic>();
-    data['value'] = this.value;
-    data['text'] = this.text;
-    return data;
-  }
-}
-
-class Environment {
-  List<Items> items;
-  int multiple;
-  String name;
-
-  Environment({this.items, this.multiple, this.name});
-
-  Environment.fromJson(Map<String, dynamic> json) {
-    if (json['items'] != null) {
-      items = new List<Items>();
-      json['items'].forEach((v) {
-        items.add(new Items.fromJson(v));
-      });
-    }
-    multiple = json['multiple'];
-    name = json['name'];
-  }
-
-  Map<String, dynamic> toJson() {
-    final Map<String, dynamic> data = new Map<String, dynamic>();
-    if (this.items != null) {
-      data['items'] = this.items.map((v) => v.toJson()).toList();
-    }
-    data['multiple'] = this.multiple;
-    data['name'] = this.name;
-    return data;
-  }
-}
-
-class PriceOption {
-  List<Items> items;
-  int multiple;
-  String name;
-
-  PriceOption({this.items, this.multiple, this.name});
-
-  PriceOption.fromJson(Map<String, dynamic> json) {
-    if (json['items'] != null) {
-      items = new List<Items>();
-      json['items'].forEach((v) {
-        items.add(new Items.fromJson(v));
-      });
-    }
-    multiple = json['multiple'];
-    name = json['name'];
-  }
-
-  Map<String, dynamic> toJson() {
-    final Map<String, dynamic> data = new Map<String, dynamic>();
-    if (this.items != null) {
-      data['items'] = this.items.map((v) => v.toJson()).toList();
-    }
-    data['multiple'] = this.multiple;
-    data['name'] = this.name;
-    return data;
-  }
-}
-
-class PriceOrder {
-  List<Items> items;
-  int multiple;
-  String name;
-
-  PriceOrder({this.items, this.multiple, this.name});
-
-  PriceOrder.fromJson(Map<String, dynamic> json) {
-    if (json['items'] != null) {
-      items = new List<Items>();
-      json['items'].forEach((v) {
-        items.add(new Items.fromJson(v));
-      });
-    }
-    multiple = json['multiple'];
-    name = json['name'];
-  }
-
-  Map<String, dynamic> toJson() {
-    final Map<String, dynamic> data = new Map<String, dynamic>();
-    if (this.items != null) {
-      data['items'] = this.items.map((v) => v.toJson()).toList();
-    }
-    data['multiple'] = this.multiple;
-    data['name'] = this.name;
-    return data;
-  }
-}
-
-class RoomType {
-  List<Items> items;
-  int multiple;
-  String name;
-
-  RoomType({this.items, this.multiple, this.name});
-
-  RoomType.fromJson(Map<String, dynamic> json) {
-    if (json['items'] != null) {
-      items = new List<Items>();
-      json['items'].forEach((v) {
-        items.add(new Items.fromJson(v));
-      });
-    }
-    multiple = json['multiple'];
-    name = json['name'];
-  }
-
-  Map<String, dynamic> toJson() {
-    final Map<String, dynamic> data = new Map<String, dynamic>();
-    if (this.items != null) {
-      data['items'] = this.items.map((v) => v.toJson()).toList();
-    }
-    data['multiple'] = this.multiple;
-    data['name'] = this.name;
-    return data;
-  }
-}
-
-class Scene {
-  List<Items> items;
-  int multiple;
-  String name;
-
-  Scene({this.items, this.multiple, this.name});
-
-  Scene.fromJson(Map<String, dynamic> json) {
-    if (json['items'] != null) {
-      items = new List<Items>();
-      json['items'].forEach((v) {
-        items.add(new Items.fromJson(v));
-      });
-    }
-    multiple = json['multiple'];
-    name = json['name'];
-  }
-
-  Map<String, dynamic> toJson() {
-    final Map<String, dynamic> data = new Map<String, dynamic>();
-    if (this.items != null) {
-      data['items'] = this.items.map((v) => v.toJson()).toList();
-    }
-    data['multiple'] = this.multiple;
-    data['name'] = this.name;
     return data;
   }
 }

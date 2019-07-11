@@ -19,12 +19,13 @@ import 'package:flutter_spinkit/flutter_spinkit.dart';
 /*
  * 客服
  **/
-class CustomerServicePage extends StatefulWidget{
+class CustomerServicePage extends StatefulWidget {
   @override
   _CustomerServicePageState createState() => _CustomerServicePageState();
 }
 
-class _CustomerServicePageState extends State<CustomerServicePage> with AutomaticKeepAliveClientMixin{
+class _CustomerServicePageState extends State<CustomerServicePage>
+    with AutomaticKeepAliveClientMixin {
   // 二维码图片
   String _qrCode = "";
 
@@ -43,7 +44,7 @@ class _CustomerServicePageState extends State<CustomerServicePage> with Automati
   void initData() {
     dio.get(Api.CUSTOMER_SERVICE).then((data) {
       var sources = jsonDecode(data.toString());
-      CustomServiceBean bean  = CustomServiceBean.fromJson(sources);
+      CustomServiceBean bean = CustomServiceBean.fromJson(sources);
       DataBean dataBean = bean.data;
 
       if (bean.errorCode == Api.SUCCESS_CODE) {
@@ -110,19 +111,20 @@ class _CustomerServicePageState extends State<CustomerServicePage> with Automati
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(22),
                       gradient: Gradients.blueLinearGradient,
-                      boxShadow: [BoxShadow(
-                          color: Color(0x26000000),
-                          offset: new Offset(0, 3),
-                          blurRadius: 10,
-                          spreadRadius: 0
-                      )],
+                      boxShadow: [
+                        BoxShadow(
+                            color: Color(0x26000000),
+                            offset: new Offset(0, 3),
+                            blurRadius: 10,
+                            spreadRadius: 0)
+                      ],
                     ),
                     child: new RaisedButton(
-                      elevation: 0,
+                        elevation: 0,
                         color: Colors.transparent,
                         shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(22)),
-                        onPressed: (){
+                        onPressed: () {
                           _lunchPhone(_phone);
                         },
                         child: new Row(
@@ -140,19 +142,21 @@ class _CustomerServicePageState extends State<CustomerServicePage> with Automati
                             ),
 
                             // 服务电话
-                            _phone.isNotEmpty ? new Padding(
-                              padding: EdgeInsets.only(left: 26),
-                              child: Text(
-                                _phone.toString(),
-                                style: new TextStyle(
-                                    fontSize: 16,
-                                    color: Colors.white
-                                ),
-                              ),
-                            ) : new Expanded(
-
-                              child: new SpinKitCircle(color: Colors.white, size: 15,),
-                            )
+                            _phone.isNotEmpty
+                                ? new Padding(
+                                    padding: EdgeInsets.only(left: 26),
+                                    child: Text(
+                                      _phone.toString(),
+                                      style: new TextStyle(
+                                          fontSize: 16, color: Colors.white),
+                                    ),
+                                  )
+                                : new Expanded(
+                                    child: new SpinKitCircle(
+                                      color: Colors.white,
+                                      size: 15,
+                                    ),
+                                  )
                           ],
                         )),
                   ),
@@ -165,45 +169,47 @@ class _CustomerServicePageState extends State<CustomerServicePage> with Automati
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(22),
                       gradient: Gradients.blueLinearGradient,
-                      boxShadow: [BoxShadow(
-                          color: Color(0x26000000),
-                          offset: new Offset(0, 3),
-                          blurRadius: 10,
-                          spreadRadius: 0
-                      )],
+                      boxShadow: [
+                        BoxShadow(
+                            color: Color(0x26000000),
+                            offset: new Offset(0, 3),
+                            blurRadius: 10,
+                            spreadRadius: 0)
+                      ],
                     ),
                     child: RaisedButton(
-                      elevation: 0,
-                      color: Colors.transparent,
-                      onPressed: () {
-                        _lunchPhone(_mobile);
-                      },
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(22)),
-                      child: new Row(
-                        children: <Widget>[
-                          Image.asset("assets/images/ic_phone.png",
-                              width: 24, height: 24),
-
-                          Container(
-                            margin: EdgeInsets.only(left: 20, right: 0),
-                            width: 1,
-                            height: 20,
-                            color: ThemeColors.colorA6A6A6,
-                          ),
-
-                          _mobile.isNotEmpty ? new Padding(padding: EdgeInsets.only(left: 26),
-                            child: Text(
-                              _mobile,
-                              textAlign: TextAlign.center,
-                              style: TextStyle(color: Colors.white, fontSize: 16.0),
+                        elevation: 0,
+                        color: Colors.transparent,
+                        onPressed: () {
+                          _lunchPhone(_mobile);
+                        },
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(22)),
+                        child: new Row(
+                          children: <Widget>[
+                            Image.asset("assets/images/ic_phone.png",
+                                width: 24, height: 24),
+                            Container(
+                              margin: EdgeInsets.only(left: 20, right: 0),
+                              width: 1,
+                              height: 20,
+                              color: ThemeColors.colorA6A6A6,
                             ),
-                          ) : new Expanded(
-                              child: new SpinKitCircle(color: Colors.white, size: 15)
-                          ),
-                        ],
-                      )
-                    ),
+                            _mobile.isNotEmpty
+                                ? new Padding(
+                                    padding: EdgeInsets.only(left: 26),
+                                    child: Text(
+                                      _mobile,
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                          color: Colors.white, fontSize: 16.0),
+                                    ),
+                                  )
+                                : new Expanded(
+                                    child: new SpinKitCircle(
+                                        color: Colors.white, size: 15)),
+                          ],
+                        )),
                   ),
                 ],
               ),
@@ -255,7 +261,10 @@ class _CustomerServicePageState extends State<CustomerServicePage> with Automati
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(4),
                       child: _qrCode == null || _qrCode.isEmpty
-                          ? new Container(child: new SpinKitCircle(color: Colors.grey, size: 15), color: Colors.white)
+                          ? new Container(
+                              child: new SpinKitCircle(
+                                  color: Colors.grey, size: 15),
+                              color: Colors.white)
                           : Image.network(_qrCode.toString()),
                     ),
                   ),
@@ -297,9 +306,7 @@ class _CustomerServicePageState extends State<CustomerServicePage> with Automati
                           decoration: BoxDecoration(
                             color: Colors.white,
                             border: new Border.all(
-                              width: 2,
-                              color: ThemeColors.color1A1A1A
-                            ),
+                                width: 2, color: ThemeColors.color1A1A1A),
                             borderRadius: BorderRadius.circular(22),
                           ),
                           child: RaisedButton(
@@ -313,11 +320,11 @@ class _CustomerServicePageState extends State<CustomerServicePage> with Automati
                             child: new Text(
                               '复制微信号',
                               style: new TextStyle(
-                                  color: ThemeColors.color1A1A1A, fontSize: 14.0),
+                                  color: ThemeColors.color1A1A1A,
+                                  fontSize: 14.0),
                             ),
                           ),
                         ),
-
                       ],
                     ),
                   ),
@@ -332,7 +339,7 @@ class _CustomerServicePageState extends State<CustomerServicePage> with Automati
                 children: <Widget>[
                   new Column(
                     children: <Widget>[
-                      Image.asset("assets/images/service_1.png",
+                      Image.asset("assets/images/ic_service_1.png",
                           width: 32, height: 32),
                       new Padding(
                         padding: EdgeInsets.only(top: 13),
@@ -346,7 +353,7 @@ class _CustomerServicePageState extends State<CustomerServicePage> with Automati
                   ),
                   new Column(
                     children: <Widget>[
-                      Image.asset("assets/images/service_2.png",
+                      Image.asset("assets/images/ic_service_2.png",
                           width: 32, height: 32),
                       new Padding(
                         padding: EdgeInsets.only(top: 13),
@@ -360,7 +367,7 @@ class _CustomerServicePageState extends State<CustomerServicePage> with Automati
                   ),
                   new Column(
                     children: <Widget>[
-                      Image.asset("assets/images/service_1.png",
+                      Image.asset("assets/images/ic_service_3.png",
                           width: 32, height: 32),
                       new Padding(
                         padding: EdgeInsets.only(top: 13),
@@ -404,12 +411,11 @@ class _CustomerServicePageState extends State<CustomerServicePage> with Automati
   }
 
   /*
-   * 复制微信号
+   * 复制��信号
    **/
   _copyWeChatId(String id) {
-    Navigator.of(context).pushNamed(Page.BOOK_INFO_PAGE);
-    // Clipboard.setData(ClipboardData(text: id));
-    // Toast.SaveImageToast.toast(context, '复制成功', true);
+    Clipboard.setData(ClipboardData(text: id));
+    Toast.SaveImageToast.toast(context, '复制成功', true);
   }
 
   /*

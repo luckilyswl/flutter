@@ -83,8 +83,7 @@ class _CustomBannerState extends State<CustomBanner> {
   Widget _buildItem(ImgModel model) {
     return GestureDetector(
       onTap: () => widget?.onTap(model.id),
-//      child: Image.network(widget.bannerStories[index], fit: BoxFit.cover),
-      child: Image.asset(model.imgUrl, fit: BoxFit.cover),
+      child: Image.network(model.imgUrl, fit: BoxFit.cover),
     );
   }
 

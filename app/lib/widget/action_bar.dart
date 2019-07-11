@@ -12,10 +12,13 @@ class ActionBar {
         margin: const EdgeInsets.all(0),
         padding: const EdgeInsets.all(0),
         decoration: BoxDecoration(
-          gradient: Gradients.blueLinearGradient,
+          image: DecorationImage(
+            image: AssetImage('assets/images/ic_action_bar_status_bg.png'),
+            fit: BoxFit.fill,
+          ),
         ),
       ),
-      preferredSize: Size(MediaQuery.of(context).size.width, 45.4),
+      preferredSize: Size(MediaQuery.of(context).size.width, 44),
     );
   }
 }

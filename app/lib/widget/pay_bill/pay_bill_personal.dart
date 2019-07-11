@@ -1,20 +1,19 @@
+import 'package:app/model/pay/pay_info_list_bean.dart';
 import 'package:app/res/res_index.dart';
 import 'package:flutter/material.dart';
 
 class PayBillPersonalWidget extends StatelessWidget {
-  final String subTitle;
+  final PayInfoListOptions options;
+  final RechargeRecommend rechargeRecommend;
   final Function onTap;
   final bool selected;
   final Function onListEvent;
   final Function onRechargeEvent;
-  final List<String> recommendList;
-  final List<String> tipsList;
 
   const PayBillPersonalWidget(
       {Key key,
-      this.subTitle,
-      this.recommendList,
-      this.tipsList,
+      this.options,
+      this.rechargeRecommend,
       this.selected,
       this.onTap,
       this.onListEvent,
@@ -52,13 +51,12 @@ class PayBillPersonalWidget extends StatelessWidget {
           Container(
             width: 32,
             height: 32,
-            color: ThemeColors.color404040,
+            child: Image.network(options.icon, fit: BoxFit.fill),
           ),
           Container(
             margin: EdgeInsets.only(left: 21),
-            width: 70,
             child: Text(
-              '个人账户',
+              options.name,
               style: TextStyle(
                 color: ThemeColors.color404040,
                 fontSize: 14,
@@ -67,20 +65,21 @@ class PayBillPersonalWidget extends StatelessWidget {
             ),
           ),
           Expanded(
-            child: (subTitle != null && subTitle.length > 0)
-                ? Container(
-                    alignment: Alignment.centerRight,
-                    margin: EdgeInsets.only(right: 20),
-                    child: Text(
-                      subTitle,
-                      style: TextStyle(
-                        color: ThemeColors.colorA6A6A6,
-                        fontSize: 14,
-                        fontWeight: FontWeight.normal,
-                      ),
-                    ),
-                  )
-                : SizedBox(),
+            child:
+                (options.subBtn.name != null && options.subBtn.name.length > 0)
+                    ? Container(
+                        alignment: Alignment.centerRight,
+                        margin: EdgeInsets.only(right: 20),
+                        child: Text(
+                          options.subBtn.name,
+                          style: TextStyle(
+                            color: ThemeColors.colorA6A6A6,
+                            fontSize: 14,
+                            fontWeight: FontWeight.normal,
+                          ),
+                        ),
+                      )
+                    : SizedBox(),
           ),
           Align(
             alignment: Alignment.centerRight,
@@ -89,7 +88,7 @@ class PayBillPersonalWidget extends StatelessWidget {
                 onTap();
               },
               child: Container(
-                color: ThemeColors.color404040,
+                color: selected ? Colors.green : ThemeColors.colorA6A6A6,
                 width: 20,
                 height: 20,
                 margin: EdgeInsets.only(right: 20),
@@ -103,7 +102,7 @@ class PayBillPersonalWidget extends StatelessWidget {
 
   List<Widget> _extraInfoSubWidgets() {
     List<Widget> extraInfoSubWidgets = <Widget>[];
-    for (String item in recommendList) {
+    for (String item in rechargeRecommend.title) {
       extraInfoSubWidgets.add(Text(
         item,
         style: TextStyle(
@@ -112,7 +111,7 @@ class PayBillPersonalWidget extends StatelessWidget {
             fontWeight: FontWeight.w300),
       ));
     }
-    for (String item in tipsList) {
+    for (String item in rechargeRecommend.desc) {
       extraInfoSubWidgets.add(Text(
         item,
         style: TextStyle(
@@ -204,8 +203,21 @@ class PayBillPersonalWidget extends StatelessWidget {
             margin: EdgeInsets.only(right: 20),
             child: Column(
               children: <Widget>[
-                _rechargeButtonWidget(),
-                _seeListButtonWidget(),
+                options.subBtn.btnName != null &&
+                        options.subBtn.btnName.length > 0
+                    ? _rechargeButtonWidget()
+                    : Container(
+                        width: 64,
+                        height: 20,
+                      ),
+                rechargeRecommend.btn != null &&
+                        rechargeRecommend.btn.title != null &&
+                        rechargeRecommend.btn.title.length > 0
+                    ? _seeListButtonWidget()
+                    : Container(
+                        width: 64,
+                        height: 20,
+                      ),
               ],
             ),
           ),

@@ -1,3 +1,5 @@
+import 'package:app/model/room_info_bean.dart' as Room;
+
 class DetailInfo {
   String errorCode;
   String msg;
@@ -29,6 +31,8 @@ class Data {
   List<Cuisine> cuisine;
   List<Devices> devices;
   List<Photos> photos;
+  List<MenusListBean> menus;
+  int isCollected;
 
   Data(
       {this.activity,
@@ -36,7 +40,8 @@ class Data {
       this.businessInfo,
       this.cuisine,
       this.devices,
-      this.photos});
+      this.photos,
+      this.menus});
 
   Data.fromJson(Map<String, dynamic> json) {
     activity = json['activity'] != null
@@ -60,10 +65,17 @@ class Data {
         devices.add(new Devices.fromJson(v));
       });
     }
+    isCollected = json['is_collected'];
     if (json['photos'] != null) {
       photos = new List<Photos>();
       json['photos'].forEach((v) {
         photos.add(new Photos.fromJson(v));
+      });
+    }
+    if (json['menus'] != null) {
+      menus = new List<MenusListBean>();
+      json['menus'].forEach((v) {
+        menus.add(new MenusListBean.fromJson(v));
       });
     }
   }
@@ -88,6 +100,10 @@ class Data {
     if (this.photos != null) {
       data['photos'] = this.photos.map((v) => v.toJson()).toList();
     }
+    if (this.menus != null) {
+      data['menus'] = this.menus.map((v) => v.toJson()).toList();
+    }
+    data['is_collected'] = this.isCollected;
     return data;
   }
 }
@@ -113,8 +129,9 @@ class Activity {
 
 class BookInfo {
   List<Date> date;
-  List<Rooms> rooms;
+  List<Room.Rooms> rooms;
   List<String> time;
+  List<int> numbers;
 
   BookInfo({this.date, this.rooms, this.time});
 
@@ -126,9 +143,9 @@ class BookInfo {
       });
     }
     if (json['rooms'] != null) {
-      rooms = new List<Rooms>();
+      rooms = new List<Room.Rooms>();
       json['rooms'].forEach((v) {
-        rooms.add(new Rooms.fromJson(v));
+        rooms.add(new Room.Rooms.fromJson(v));
       });
     }
     time = json['time'].cast<String>();
@@ -179,6 +196,7 @@ class Rooms {
   String detail;
   int shopMoney;
   String defaultImg;
+
   // List<Null> imgList;
   List<Devices> devices;
   String numberDesc;
@@ -468,6 +486,54 @@ class Photos {
     data['src'] = this.src;
     data['title'] = this.title;
     data['subTitle'] = this.subTitle;
+    return data;
+  }
+}
+
+class BusinessDetailBean {
+  List<MenusListBean> menus;
+
+  BusinessDetailBean({this.menus});
+
+  BusinessDetailBean.fromJson(Map<String, dynamic> json) {
+    this.menus = (json['menus'] as List) != null
+        ? (json['menus'] as List).map((i) => MenusListBean.fromJson(i)).toList()
+        : null;
+  }
+
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> data = new Map<String, dynamic>();
+    data['menus'] =
+        this.menus != null ? this.menus.map((i) => i.toJson()).toList() : null;
+    return data;
+  }
+}
+
+class MenusListBean {
+  String title;
+  String numbers;
+  String perPrice;
+  String dishesMenus;
+  int id;
+
+  MenusListBean(
+      {this.title, this.numbers, this.perPrice, this.dishesMenus, this.id});
+
+  MenusListBean.fromJson(Map<String, dynamic> json) {
+    this.title = json['title'];
+    this.numbers = json['numbers'];
+    this.perPrice = json['per_price'];
+    this.dishesMenus = json['dishes_menus'];
+    this.id = json['id'];
+  }
+
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> data = new Map<String, dynamic>();
+    data['title'] = this.title;
+    data['numbers'] = this.numbers;
+    data['per_price'] = this.perPrice;
+    data['dishes_menus'] = this.dishesMenus;
+    data['id'] = this.id;
     return data;
   }
 }

@@ -3,8 +3,11 @@ import 'package:flutter/material.dart';
 
 class PayBillListDialog extends Dialog {
   final Function onCloseEvent;
+  final String imgUrl;
 
-  PayBillListDialog({Key key, @required this.onCloseEvent}) : super(key: key);
+  PayBillListDialog(
+      {Key key, @required this.onCloseEvent, @required this.imgUrl})
+      : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -24,28 +27,30 @@ class PayBillListDialog extends Dialog {
             child: Column(
               children: <Widget>[
                 Expanded(
-                  child: Container(
-                    color: ThemeColors.colorA6A6A6,
-                  ),
+                  child: Image.network(imgUrl, fit: BoxFit.fill),
                 ),
                 Divider(
                   height: 1,
                   color: Color(0xFFDEDEDE),
                 ),
-                Container(
-                  height: 50,
-                  alignment: Alignment.center,
-                  child: GestureDetector(
-                      child: Text(
-                        '知道了',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: ThemeColors.color404040,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w400,
-                        ),
+                GestureDetector(
+                  onTap: () {
+                    onCloseEvent();
+                  },
+                  child: Container(
+                    height: 50,
+                    color: Colors.white,
+                    alignment: Alignment.center,
+                    child: Text(
+                      '知道了',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: ThemeColors.color404040,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w400,
                       ),
-                      onTap: this.onCloseEvent),
+                    ),
+                  ),
                 ),
               ],
             ),

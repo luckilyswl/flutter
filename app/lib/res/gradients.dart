@@ -7,11 +7,11 @@ import 'package:app/res/theme_colors.dart';
 class Gradients {
   ///蓝色渐变
   static const blueLinearGradient = LinearGradient(
-    begin: Alignment(1.0, 0.0),
-    end: Alignment(-1, 0.0),
+    begin: Alignment.centerRight,
+    end: Alignment.centerLeft,
     colors: [
-      ThemeColors.color555C9E,
-      ThemeColors.color2E3576,
+      ThemeColors.color363659,
+      ThemeColors.color54548C,
     ],
   );
 
@@ -26,22 +26,22 @@ class Gradients {
 
   ///金亮色渐变
   static const goldLightLinearGradient = LinearGradient(
+    begin: Alignment.centerRight,
+    end: Alignment.centerLeft,
     colors: [
       ThemeColors.colorFFEFD4,
       ThemeColors.colorFFE3B1,
     ],
-    begin: Alignment.centerLeft,
-    end: Alignment.centerRight,
   );
 
   ///金暗色渐变
   static const goldDarkLinearGradient = LinearGradient(
-    colors: [
-      ThemeColors.colorD39857,
-      ThemeColors.colorE9B882,
-    ],
     begin: Alignment.centerLeft,
     end: Alignment.centerRight,
+    colors: [
+      ThemeColors.colorF9D598,
+      ThemeColors.colorD59D56,
+    ],
   );
 
   ///金暗色渐变
@@ -49,6 +49,16 @@ class Gradients {
     colors: [
       ThemeColors.color333333,
       ThemeColors.color666666,
+    ],
+  );
+
+  /// 返回买单渐变
+  static const returnBuyGradient = LinearGradient(
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+    colors: [
+      Color(0xffE8B177),
+      Color(0xffD08F49),
     ],
   );
 }

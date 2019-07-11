@@ -140,7 +140,7 @@ class HallFilterState extends State<HallFilter> {
             border: Border.all(
                 width: hasBorder ? 1 : 0,
                 color:
-                    hasBorder ? ThemeColors.colorA6A6A6 : Colors.transparent),
+                    hasBorder ? ThemeColors.colorF2C785 : Colors.transparent),
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -161,14 +161,8 @@ class HallFilterState extends State<HallFilter> {
                         color: ThemeColors.colorA6A6A6),
               ),
               SizedBox(width: 2),
-              SizedBox(
-                width: 14,
-                height: 14,
-                child: Center(
-                  child: Image.asset('assets/images/ic_message.png',
-                      width: 8, height: 4, fit: BoxFit.fill),
-                ),
-              ),
+              Image.asset('assets/images/ic_xiala_grey.png',
+                  width: 20, height: 20),
             ],
           ),
         ),

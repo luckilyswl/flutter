@@ -2,10 +2,22 @@ import 'package:app/res/res_index.dart';
 import 'package:flutter/material.dart';
 
 class PayBillEnterpriseWidget extends StatelessWidget {
+  final String title;
   final String subTitle;
+  final String icon;
   final Function onTap;
   final bool selected;
-  const PayBillEnterpriseWidget({Key key, this.subTitle, @required this.onTap, @required this.selected}) : super(key: key);
+  final bool enableSelected;
+
+  const PayBillEnterpriseWidget(
+      {Key key,
+      this.subTitle,
+      @required this.title,
+      @required this.icon,
+      @required this.onTap,
+      @required this.selected,
+      @required this.enableSelected})
+      : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -18,14 +30,13 @@ class PayBillEnterpriseWidget extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: <Widget>[
             Container(
-              width: 45,
-              height: 45,
-              color: ThemeColors.color404040,
-            ),
+                width: 45,
+                height: 45,
+                child: Image.network(icon, fit: BoxFit.fill)),
             Container(
               margin: EdgeInsets.only(left: 14),
               child: Text(
-                '企业账户',
+                title,
                 style: TextStyle(
                   color: ThemeColors.color404040,
                   fontSize: 20,
@@ -51,10 +62,12 @@ class PayBillEnterpriseWidget extends StatelessWidget {
               alignment: Alignment.centerRight,
               child: GestureDetector(
                 onTap: () {
-                  onTap();
+                  if (enableSelected) {
+                    onTap();
+                  }
                 },
                 child: Container(
-                  color: ThemeColors.color404040,
+                  color: selected ? Colors.green : ThemeColors.colorA6A6A6,
                   width: 20,
                   height: 20,
                   margin: EdgeInsets.only(left: 14, right: 20),

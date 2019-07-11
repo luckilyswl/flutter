@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:app/res/res_index.dart';
 import 'package:app/utils/utils_index.dart';
+import 'package:app/model/room_info_bean.dart' as Room;
 import 'widgets_index.dart';
+import 'package:app/model/business_detail_bean.dart' as Detail;
+import 'package:flutter/cupertino.dart';
+import 'package:app/pages/business/imageviewer.dart';
 
 /*
  * 包房详情PopupWindow Widget
@@ -26,6 +30,9 @@ class RoomDetailPopupWindowState extends State<RoomDetailPopupWindow>
   //banner指示器
   List<IndicatorModel> indicatorsData;
 
+  //大图浏览数据
+  List<Detail.Photos> photos;
+
   //tabs
   List<Tab> _tabs;
   TabController _tabController;
@@ -34,37 +41,16 @@ class RoomDetailPopupWindowState extends State<RoomDetailPopupWindow>
   @override
   void initState() {
     super.initState();
-    widget.roomModel.devices = [
-      DevicesListBean(img: 'assets/images/ic_wifi.png', value: '无线上网'),
-      DevicesListBean(img: 'assets/images/ic_wifi.png', value: '空调'),
-      DevicesListBean(img: 'assets/images/ic_wifi.png', value: '洗手间'),
-      DevicesListBean(img: 'assets/images/ic_wifi.png', value: '茶桌'),
-      DevicesListBean(img: 'assets/images/ic_wifi.png', value: '电视'),
-      DevicesListBean(img: 'assets/images/ic_wifi.png', value: '投影'),
-      DevicesListBean(img: 'assets/images/ic_wifi.png', value: '麻将台'),
-      DevicesListBean(img: 'assets/images/ic_wifi.png', value: 'KTV设备'),
-      DevicesListBean(img: 'assets/images/ic_wifi.png', value: '窗边景观'),
-      DevicesListBean(img: 'assets/images/ic_wifi.png', value: '吧台'),
-    ];
-    widget.roomModel.roomInfo =
-        '普通收费标准：128元/小时，一道茶258元起，配有茶艺师冲泡服务。 会务收费标准： 1、包房3小时，标准价1399元，提供茶水+茶点8份+水果盘4份； 2、配有茶艺师在旁加茶，超时按258元/小时收取； 3、白天时段可以享受折扣。 3、白天时段可以享受折扣。';
-    widget.roomModel.roomName = '拿破仑房';
-    widget.roomModel.numPeople = '6-8人';
-    widget.roomModel.price = 50;
-    widget.roomModel.recommendPrice = 3000;
-    widget.roomModel.imgUrls = [
-      ImgModel(id: 0, imgUrl: 'assets/images/ic_food.png'),
-      ImgModel(id: 1, imgUrl: 'assets/images/ic_food.png'),
-      ImgModel(id: 2, imgUrl: 'assets/images/ic_food.png'),
-    ];
 
     indicatorsData = [];
+    photos = [];
     for (int i = 0, len = widget.roomModel.imgUrls.length; i < len; i++) {
       if (0 == i) {
         indicatorsData.add(IndicatorModel(id: i, hasBg: true));
       } else {
         indicatorsData.add(IndicatorModel(id: i, hasBg: false));
       }
+      photos.add(Detail.Photos(id: i, src: widget.roomModel.imgUrls[i].imgUrl));
     }
 
     _tabs = [];
@@ -120,37 +106,53 @@ class RoomDetailPopupWindowState extends State<RoomDetailPopupWindow>
                     Stack(
                       children: <Widget>[
                         Container(
-                          height: 215,
                           margin:
                               const EdgeInsets.only(left: 8, top: 8, right: 8),
                           child: Card(
                             shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(4)),
                             clipBehavior: Clip.antiAlias,
-                            child: CustomBanner(
-                              bannerStories: widget.roomModel.imgUrls,
-                              onTap: (id) => _clickPhoto(id),
-                              onPageChange: (id) {
-                                print('change: $id');
-                                setState(() {
-                                  indicatorsData
-                                      .forEach((f) => f.hasBg = false);
-                                  indicatorsData[id].hasBg = true;
-                                });
-                              },
-                              autoScroll: false,
+                            child: Container(
+                              height: 215,
+                              width: ScreenUtil.getScreenW(context) - 16,
+                              alignment: Alignment.center,
+                              child: 1 >= widget.roomModel.imgUrls.length
+                                  ? GestureDetector(
+                                      onTap: () => _clickPhoto(0),
+                                      child: Image.network(
+                                        widget.roomModel.imgUrls[0].imgUrl,
+                                        fit: BoxFit.fitWidth,
+                                        height: 215,
+                                        width:
+                                            ScreenUtil.getScreenW(context) - 16,
+                                      ),
+                                    )
+                                  : CustomBanner(
+                                      bannerStories: widget.roomModel.imgUrls,
+                                      onTap: (id) => _clickPhoto(id),
+                                      onPageChange: (id) {
+                                        setState(() {
+                                          indicatorsData
+                                              .forEach((f) => f.hasBg = false);
+                                          indicatorsData[id].hasBg = true;
+                                        });
+                                      },
+                                      autoScroll: false,
+                                    ),
                             ),
                           ),
                         ),
-                        Positioned(
-                          right: 20,
-                          bottom: 14,
-                          child: Row(
-                            children: indicatorsData
-                                .map((f) => _buildIndicator(f))
-                                .toList(),
-                          ),
-                        ),
+                        1 >= widget.roomModel.imgUrls.length
+                            ? SizedBox()
+                            : Positioned(
+                                right: 20,
+                                bottom: 14,
+                                child: Row(
+                                  children: indicatorsData
+                                      .map((f) => _buildIndicator(f))
+                                      .toList(),
+                                ),
+                              ),
                       ],
                     ),
                     Column(
@@ -174,7 +176,7 @@ class RoomDetailPopupWindowState extends State<RoomDetailPopupWindow>
                                   ),
                                   SizedBox(height: 6),
                                   Text(
-                                    '推荐消费：${NumUtil.getNumByValueDouble(widget.roomModel?.recommendPrice, 0)}',
+                                    '推荐消费：${widget.roomModel?.recommendPrice}',
                                     style: FontStyles.style14404040,
                                   ),
                                   SizedBox(height: 2)
@@ -191,8 +193,7 @@ class RoomDetailPopupWindowState extends State<RoomDetailPopupWindow>
                                             text: '¥',
                                             style: FontStyles.style14404040),
                                         TextSpan(
-                                            text:
-                                                '${NumUtil.getNumByValueDouble(widget.roomModel.price, 0)}',
+                                            text: '${widget.roomModel.price}',
                                             style: FontStyles.style28404040)
                                       ]),
                                     ),
@@ -322,8 +323,7 @@ class RoomDetailPopupWindowState extends State<RoomDetailPopupWindow>
                         height: 28,
                         margin: const EdgeInsets.only(right: 8, top: 8),
                         child: Center(
-                          child: Image.asset('assets/images/ic_menu.png',
-                              fit: BoxFit.cover),
+                          child: Icon(Icons.close),
                         ),
                       ),
                     ),
@@ -359,7 +359,7 @@ class RoomDetailPopupWindowState extends State<RoomDetailPopupWindow>
   Widget _buildGridItem(String imgUrl, String value) {
     return Container(
       child: Column(children: <Widget>[
-        Image.asset(imgUrl, width: 24, height: 24, fit: BoxFit.cover),
+        Image.network(imgUrl, width: 24, height: 24, fit: BoxFit.cover),
         SizedBox(height: 6),
         Text(value, style: FontStyles.style10404040),
       ]),
@@ -378,9 +378,9 @@ class RoomDetailPopupWindowState extends State<RoomDetailPopupWindow>
         mainAxisSpacing: 15,
         crossAxisSpacing: 20,
         shrinkWrap: true,
-        childAspectRatio: 1.2,
+        childAspectRatio: 0.9,
         children: widget.roomModel.devices
-            .map((f) => _buildGridItem(f.img, f.value))
+            .map((f) => _buildGridItem(f.icon, f.title))
             .toList(),
       ),
     );
@@ -411,23 +411,27 @@ class RoomDetailPopupWindowState extends State<RoomDetailPopupWindow>
   _clickChoose() {
     if (widget.roomModel.isClickable) {
       widget.callback();
+      Navigator.of(context).pop();
     }
-    Navigator.of(context).pop();
   }
 
   ///图片点击事件
-  _clickPhoto(int id) {}
+  _clickPhoto(int id) {
+    Navigator.of(context).push(MaterialPageRoute(builder: (_) {
+      return ImageViewer(id, photos);
+    }));
+  }
 }
 
 class RoomModel {
   String roomName;
   String numPeople;
   String roomInfo;
-  double recommendPrice;
-  double price;
+  String recommendPrice;
+  String price;
   bool isClickable;
   List<ImgModel> imgUrls;
-  List<DevicesListBean> devices;
+  List<Room.Devices> devices;
 
   RoomModel(
       {this.roomName,
@@ -443,11 +447,11 @@ class RoomModel {
     this.roomName = json['roomName'];
     this.numPeople = json['numPeople'];
     this.roomInfo = json['roomInfo'];
-    this.recommendPrice = json['recommendPrice'];
-    this.price = json['price'];
+    this.recommendPrice = json['recommendPrice'].toString();
+    this.price = json['price'].toString();
     this.devices = (json['devices'] as List) != null
         ? (json['devices'] as List)
-            .map((i) => DevicesListBean.fromJson(i))
+            .map((i) => Room.Devices.fromJson(i))
             .toList()
         : null;
     this.isClickable = json['isClickable'];

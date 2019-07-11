@@ -1,3 +1,8 @@
+import 'dart:convert';
+
+import 'package:app/api/api.dart';
+import 'package:app/http.dart';
+import 'package:app/model/book/book_result_info_bean.dart';
 import 'package:app/navigator/page_route.dart';
 import 'package:app/res/res_index.dart';
 import 'package:flutter/material.dart';
@@ -14,12 +19,11 @@ class BookResultPage extends StatefulWidget {
 
 class _BookResultPageState extends State<BookResultPage>
     with SingleTickerProviderStateMixin {
-  bool _needConfirm = true;
-  List<String> _banners;
+  BookResultData resultData;
+  int orderId = 0;
 
   @override
   void initState() {
-    _banners = <String>["广告位", "广告位", "广告位", "广告位"];
     super.initState();
   }
 
@@ -29,7 +33,7 @@ class _BookResultPageState extends State<BookResultPage>
   }
 
   _seeOrder() {
-    Navigator.of(context).pushNamed(Page.PAY_BILL_PAGE);
+    Navigator.of(context).pushNamed(Page.PAY_BILL_PAGE, arguments: {"orderId": orderId});
     debugPrint('查看订单');
   }
 
@@ -41,7 +45,7 @@ class _BookResultPageState extends State<BookResultPage>
     debugPrint('联系客服');
   }
 
-  _normalWidget(String title) {
+  _normalWidget(BookResultBanners banner) {
     return Container(
       height: 90,
       decoration: new BoxDecoration(
@@ -50,14 +54,7 @@ class _BookResultPageState extends State<BookResultPage>
       ),
       margin: EdgeInsets.only(left: 14, right: 14, top: 14),
       alignment: Alignment.center,
-      child: Text(
-        title,
-        style: TextStyle(
-          color: ThemeColors.color404040,
-          fontSize: 40,
-          fontWeight: FontWeight.w500,
-        ),
-      ),
+      child: Image.network(banner.imgUrl, fit: BoxFit.fill),
     );
   }
 
@@ -75,7 +72,7 @@ class _BookResultPageState extends State<BookResultPage>
           Container(
             margin: EdgeInsets.only(left: 14),
             alignment: Alignment.centerLeft,
-            child: Text('若用餐前有疑问可随时咨询, 客服24小时在线。',
+            child: Text(resultData.tips,
                 textAlign: TextAlign.left,
                 style: TextStyle(
                   fontSize: 14,
@@ -104,7 +101,7 @@ class _BookResultPageState extends State<BookResultPage>
           Container(
             margin: EdgeInsets.only(top: 15),
             alignment: Alignment.center,
-            child: Text(_needConfirm ? '订金支付成功' : '预定成功',
+            child: Text(resultData.title,
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 20,
@@ -115,10 +112,7 @@ class _BookResultPageState extends State<BookResultPage>
           Container(
             margin: EdgeInsets.only(top: 15, left: 27, right: 27),
             alignment: Alignment.center,
-            child: Text(
-                _needConfirm
-                    ? '客服正马不停蹄地为您向餐厅确认中，请耐心等待， 客服将会在第一时间给您答复并跟进服务。'
-                    : '请上座已为您成功预留包房，\n祝您用餐愉快',
+            child: Text(resultData.description,
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 14,
@@ -179,7 +173,8 @@ class _BookResultPageState extends State<BookResultPage>
                     ),
                     child: FlatButton(
                       padding: new EdgeInsets.fromLTRB(0.0, 0.0, 0.0, 0.0),
-                      child: Text(_needConfirm ? "联系客服" : "邀请好友就餐",
+                      child: Text(
+                          resultData.confirmStatus == 1 ? "联系客服" : "邀请好友就餐",
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             color: Colors.white,
@@ -187,7 +182,7 @@ class _BookResultPageState extends State<BookResultPage>
                             fontWeight: FontWeight.w400,
                           )),
                       onPressed: () {
-                        if (_needConfirm) {
+                        if (resultData.confirmStatus == 1) {
                           _service();
                         } else {
                           _inviteFriend();
@@ -223,21 +218,44 @@ class _BookResultPageState extends State<BookResultPage>
   _getListContent() {
     return ListView.builder(
       padding: EdgeInsets.all(0),
-      itemCount: _banners.length + 2,
+      itemCount: resultData.banners != null ? resultData.banners.length + 2 : 2,
       itemBuilder: (BuildContext context, int index) {
         if (index == 0) {
           return _headerWidget();
         } else if (index == 1) {
           return _contentWidget();
         } else {
-          return _normalWidget(_banners[index - 2]);
+          return _normalWidget(resultData.banners[index - 2]);
         }
       },
     );
   }
 
+  initData() {
+    //预定信息
+    dio.get(Api.BOOK_PAY_RESULT, queryParameters: {
+      "order_id": orderId.toString(),
+    }).then((data) {
+      var sources = jsonDecode(data.toString());
+      BookResultInfoBean bean = BookResultInfoBean.fromJson(sources);
+      if (bean.errorCode == Api.SUCCESS_CODE) {
+        BookResultData dataBean = bean.data;
+        setState(() {
+          resultData = dataBean;
+        });
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
+    /*获取传递过来的参数*/
+    Map<String, dynamic> orderInfo = ModalRoute.of(context).settings.arguments;
+    if (orderId == 0 && orderInfo != null) {
+      orderId = orderInfo["orderId"];
+      initData();
+    }
+
     return Scaffold(
       appBar: PreferredSize(
         child: Container(
@@ -254,7 +272,7 @@ class _BookResultPageState extends State<BookResultPage>
       ),
       body: Container(
         color: ThemeColors.colorF2F2F2,
-        child: _getListContent(),
+        child: resultData != null ? _getListContent() : Container(),
       ),
     );
   }

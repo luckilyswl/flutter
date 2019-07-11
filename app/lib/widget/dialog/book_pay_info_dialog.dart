@@ -4,11 +4,13 @@ import 'package:flutter/rendering.dart';
 
 class BookPayInfoDialog extends Dialog {
   final Function onCloseEvent;
+  final String content;
 
-  BookPayInfoDialog(
-      {Key key,
-      @required this.onCloseEvent})
-      : super(key: key);
+  BookPayInfoDialog({
+    Key key,
+    @required this.onCloseEvent,
+    @required this.content,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -43,12 +45,15 @@ class BookPayInfoDialog extends Dialog {
                 ),
                 Expanded(
                   child: Container(
-                    padding: EdgeInsets.only(left: 20,right: 20),
-                    child: Text('1. 免费取消，取消后订金即刻原路退回，取消后订金即刻原路退回； \n2. 帮人预订。他人买单后订金即刻原路退回，取消后订金即刻原路退回。',style: TextStyle(
-                      color: ThemeColors.color404040,
-                      fontSize: 14,
-                      fontWeight: FontWeight.normal,
-                    ),),
+                    padding: EdgeInsets.only(left: 20, right: 20),
+                    child: Text(
+                      content,
+                      style: TextStyle(
+                        color: ThemeColors.color404040,
+                        fontSize: 14,
+                        fontWeight: FontWeight.normal,
+                      ),
+                    ),
                   ),
                 ),
                 Divider(

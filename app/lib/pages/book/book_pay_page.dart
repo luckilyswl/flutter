@@ -1,11 +1,22 @@
+import 'dart:convert';
+
+import 'package:app/api/api.dart';
+import 'package:app/http.dart';
+import 'package:app/model/book/book_pay_info_bean.dart';
+import 'package:app/model/book/book_pay_parameters_bean.dart';
+import 'package:app/model/enum_define.dart';
 import 'package:app/navigator/page_route.dart';
 import 'package:app/res/res_index.dart';
 import 'package:app/widget/dialog/book_application_dialog.dart';
 import 'package:app/widget/dialog/pay_alert_dialog.dart';
 import 'package:app/widget/widgets_index.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:app/res/theme_colors.dart';
 import 'package:flutter/painting.dart';
+import 'package:app/widget/toast.dart' as T;
+import 'package:fluwx/fluwx.dart' as fluwx;
+import 'package:tobias/tobias.dart' as tobias;
 
 /*
  * 预定成功页面
@@ -17,14 +28,49 @@ class BookPayPage extends StatefulWidget {
 
 class _BookPayPageState extends State<BookPayPage>
     with SingleTickerProviderStateMixin {
-  bool _needConfirm = true;
-  bool _isOpen = false;
-  List<String> _payList;
+  bool _useEnterprise = false;
+  List<BookPayInfoOptions> _payList = [];
+  BookPayInfoOptions enterpriseOptions;
+  BookPayInfoData payData;
+  int currentPayId = -1;
+  String currentPayName = '';
+  int orderId = 0;
 
   @override
   void initState() {
-    _payList = <String>["个人账户", "微信支付", "支付宝"];
+    fluwx.responseFromPayment.listen((data) {
+      if (data.errCode == 0) {
+        Navigator.of(context).popAndPushNamed(Page.BOOK_RESULT_PAGE,
+            arguments: {"orderId": orderId});
+      } else {
+        T.Toast.toast(context, '支付失败，请重新支付');
+      }
+    });
     super.initState();
+  }
+
+  initData() {
+    dio.get(Api.BOOK_PAY_LIST, queryParameters: {
+      "order_id": orderId.toString(),
+    }).then((data) {
+      var sources = jsonDecode(data.toString());
+      BookPayInfoBean bean = BookPayInfoBean.fromJson(sources);
+      BookPayInfoData dataBean = bean.data;
+      if (bean.errorCode == Api.SUCCESS_CODE) {
+        setState(() {
+          payData = dataBean;
+          List<BookPayInfoOptions> payList = [];
+          for (BookPayInfoOptions options in dataBean.options) {
+            if (options.payId == PayType.ENTERPRISE_PAY) {
+              enterpriseOptions = options;
+            } else {
+              payList.add(options);
+            }
+          }
+          _payList = payList;
+        });
+      }
+    });
   }
 
   @override
@@ -32,7 +78,7 @@ class _BookPayPageState extends State<BookPayPage>
     super.dispose();
   }
 
-  _payResult() {
+  _showPayAlertDialog() {
     showDialog<Null>(
         context: context, //BuildContext对象
         barrierDismissible: false,
@@ -43,13 +89,68 @@ class _BookPayPageState extends State<BookPayPage>
             },
             onRightCloseEvent: () {
               Navigator.pop(context);
-              Navigator.of(context).pushNamed(Page.BOOK_RESULT_PAGE);
+              _toPay();
             },
+            amout: payData.orderAmout.toString(),
+            name: currentPayName,
           );
         });
   }
 
-  _normalWidget(String title) {
+  _toPay() {
+    Map<String, dynamic> queryParameters = {};
+    queryParameters["order_id"] = payData.orderId.toString();
+    queryParameters["pay_id"] = currentPayId.toString();
+    if (currentPayId == PayType.PERSONAL_PAY) {
+      queryParameters["use_balance"] = '1';
+    }
+    dio.post(Api.BOOK_PAY, data: queryParameters).then((data) async {
+      var sources = jsonDecode(data.data);
+      BookPayParametersBean bean = BookPayParametersBean.fromJson(sources);
+      BookPayParametersData dataBean = bean.data;
+      if (bean.errorCode == Api.SUCCESS_CODE) {
+        if (dataBean.payCode == '5100') {
+          Navigator.of(context).popAndPushNamed(Page.BOOK_RESULT_PAGE,
+              arguments: {"orderId": orderId});
+        } else {
+          if (currentPayId == PayType.ALI_PAY) {
+            debugPrint(dataBean.payParam.queryString);
+            Map payResult;
+            try {
+              payResult = await tobias.pay(dataBean.payParam.queryString);
+              if (payResult["resultStatus"] == '9000') {
+                Navigator.of(context).popAndPushNamed(Page.BOOK_RESULT_PAGE,
+                    arguments: {"orderId": orderId});
+              } else {
+                T.Toast.toast(context, '支付失败，请重新支付');
+              }
+            } on Exception catch (e) {
+              payResult = {};
+              T.Toast.toast(context, '支付失败，请重新支付');
+            }
+            if (!mounted) {
+              return;
+            }
+            debugPrint(payResult.toString());
+          } else if (currentPayId == PayType.WX_PAY) {
+            fluwx.pay(
+              appId: 'wxa9fef87b18258e5e',
+              partnerId: dataBean.payParam.partnerId,
+              prepayId: dataBean.payParam.prepayId,
+              packageValue: dataBean.payParam.package,
+              nonceStr: dataBean.payParam.nonceStr,
+              timeStamp: int.parse(dataBean.payParam.timeStamp),
+              sign: dataBean.payParam.paySign,
+            );
+          }
+        }
+      } else {
+        T.Toast.toast(context, sources['msg']);
+      }
+    });
+  }
+
+  _normalWidget(BookPayInfoOptions payInfoOptions) {
     return Container(
       height: 60,
       color: Colors.white,
@@ -63,16 +164,13 @@ class _BookPayPageState extends State<BookPayPage>
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: <Widget>[
-            Container(
-              width: 32,
-              height: 32,
-              color: ThemeColors.color404040,
-            ),
+            Image.network(payInfoOptions.icon,
+                width: 32, height: 32, fit: BoxFit.fill),
             Container(
               margin: EdgeInsets.only(left: 20),
               width: 70,
               child: Text(
-                title,
+                payInfoOptions.name,
                 style: TextStyle(
                   color: ThemeColors.color404040,
                   fontSize: 14,
@@ -86,7 +184,9 @@ class _BookPayPageState extends State<BookPayPage>
               alignment: Alignment.centerRight,
               child: Container(
                 child: Text(
-                  '余额￥116.5',
+                  payInfoOptions.payId == PayType.PERSONAL_PAY
+                      ? '余额￥${payData.userAccount.availableBalance.toString()}'
+                      : '',
                   textAlign: TextAlign.right,
                   style: TextStyle(
                     color: ThemeColors.colorA6A6A6,
@@ -98,11 +198,28 @@ class _BookPayPageState extends State<BookPayPage>
             )),
             Align(
               alignment: Alignment.centerRight,
-              child: Container(
-                color: ThemeColors.color404040,
-                width: 20,
-                height: 20,
-                margin: EdgeInsets.only(right: 14),
+              child: GestureDetector(
+                onTap: () {
+                  if (payInfoOptions.available == 1) {
+                    setState(() {
+                      currentPayId = payInfoOptions.payId;
+                      currentPayName = payInfoOptions.name;
+                    });
+                  }
+                },
+                child: payInfoOptions.payId == currentPayId
+                    ? Container(
+                        color: Colors.green,
+                        width: 20,
+                        height: 20,
+                        margin: EdgeInsets.only(right: 14),
+                      )
+                    : Container(
+                        color: ThemeColors.colorA6A6A6,
+                        width: 20,
+                        height: 20,
+                        margin: EdgeInsets.only(right: 14),
+                      ),
               ),
             )
           ],
@@ -123,7 +240,7 @@ class _BookPayPageState extends State<BookPayPage>
             alignment: Alignment.center,
             child: RichText(
               textAlign: TextAlign.center,
-              text: _isOpen
+              text: _useEnterprise
                   ? TextSpan(
                       text: "￥ ",
                       style: TextStyle(
@@ -140,7 +257,7 @@ class _BookPayPageState extends State<BookPayPage>
                           ),
                         ),
                         TextSpan(
-                          text: "￥100",
+                          text: "￥${payData.orderAmout.toString()}",
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.normal,
@@ -158,7 +275,7 @@ class _BookPayPageState extends State<BookPayPage>
                           fontWeight: FontWeight.normal),
                       children: [
                         TextSpan(
-                          text: "100",
+                          text: "${payData.orderAmout.toString()}",
                           style: TextStyle(
                             fontSize: 32,
                             fontWeight: FontWeight.normal,
@@ -185,8 +302,8 @@ class _BookPayPageState extends State<BookPayPage>
   }
 
   _getListContent() {
-    if (_needConfirm) {
-      if (_isOpen) {
+    if (payData.enterprisePay == 1 || payData.enterprisePay == 3) {
+      if (_useEnterprise) {
         return ListView.builder(
           padding: EdgeInsets.all(0),
           itemCount: 3,
@@ -294,14 +411,27 @@ class _BookPayPageState extends State<BookPayPage>
           Expanded(
             child: Align(
               alignment: Alignment.centerRight,
-              child: GestureDetector(
-                onTap: () {
-                  _showApplicationDialog();
-                },
-                child: Container(
-                  color: ThemeColors.color404040,
-                  width: 51,
-                  height: 28,
+              child: Container(
+                width: 51,
+                height: 28,
+                child: CupertinoSwitch(
+                  activeColor: ThemeColors.colorF2C785,
+                  value: _useEnterprise,
+                  onChanged: (bool value) {
+                    setState(() {
+                      if (payData.enterprisePay == 3) {
+                        _showApplicationDialog();
+                      } else if (payData.enterprisePay == 1) {
+                        setState(() {
+                          _useEnterprise = !_useEnterprise;
+                          if (_useEnterprise) {
+                            currentPayId = enterpriseOptions.payId;
+                            currentPayName = enterpriseOptions.name;
+                          }
+                        });
+                      }
+                    });
+                  },
                 ),
               ),
             ),
@@ -330,6 +460,13 @@ class _BookPayPageState extends State<BookPayPage>
 
   @override
   Widget build(BuildContext context) {
+    /*获取传递过来的参数*/
+    Map<String, dynamic> orderInfo = ModalRoute.of(context).settings.arguments;
+    if (orderId == 0 && orderInfo != null) {
+      orderId = orderInfo["orderId"];
+      initData();
+    }
+
     return Scaffold(
       appBar: PreferredSize(
         child: Container(
@@ -350,7 +487,7 @@ class _BookPayPageState extends State<BookPayPage>
             child: Column(
               children: <Widget>[
                 Expanded(
-                  child: _getListContent(),
+                  child: payData != null ? _getListContent() : Container(),
                 ),
                 Align(
                   child: Container(
@@ -359,7 +496,7 @@ class _BookPayPageState extends State<BookPayPage>
                     height: 50,
                     child: FlatButton(
                       padding: new EdgeInsets.fromLTRB(0.0, 0.0, 0.0, 0.0),
-                      child: Text("确定支付",
+                      child: Text("确认支付",
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             color: Colors.white,
@@ -367,7 +504,7 @@ class _BookPayPageState extends State<BookPayPage>
                             fontWeight: FontWeight.w400,
                           )),
                       onPressed: () {
-                        _payResult();
+                        _showPayAlertDialog();
                       },
                       textTheme: ButtonTextTheme.normal,
                       textColor: Colors.white,

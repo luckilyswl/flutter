@@ -1,7 +1,6 @@
 import 'package:app/Application.dart';
 import 'package:flutter/material.dart';
 import 'package:app/model/event.dart';
-import 'package:app/utils/utils_index.dart';
 import 'package:app/res/res_index.dart';
 import 'package:app/pages/pages_index.dart';
 
@@ -24,9 +23,7 @@ class _TabNavigatorState extends State<TabNavigator> {
   void initState() {
     super.initState();
 
-    _controller = new PageController(
-      initialPage: 0
-    );
+    _controller = new PageController(initialPage: 0);
 
     // 根据不同事件处理
     Application.getEventBus().on<String>().listen((event) {
@@ -35,6 +32,9 @@ class _TabNavigatorState extends State<TabNavigator> {
           if (event == EventType.goServer) {
             _currentIndex = 2;
             _controller.jumpToPage(2);
+          } else if (event == EventType.goHome) {
+            _currentIndex = 0;
+            _controller.jumpToPage(0);
           }
         });
       }
@@ -43,38 +43,69 @@ class _TabNavigatorState extends State<TabNavigator> {
     _widgets = [HomePage(), ManagerPage(), CustomerServicePage(), MyPage()];
     _items = [
       BottomNavigationBarItem(
-          icon: Icon(Icons.home, color: _defaultColor),
-          activeIcon: Icon(Icons.home, color: _activeColor),
+          icon: Image.asset(
+            'assets/images/tab_unselect_home.png',
+            width: 24,
+            height: 24,
+          ),
+          activeIcon: Image.asset(
+            'assets/images/tab_select_home.png',
+            width: 24,
+            height: 24,
+          ),
           title: Text(
             '首页',
             style: TextStyle(
                 color: _currentIndex != 0 ? _defaultColor : _activeColor),
           )),
       BottomNavigationBarItem(
-          icon: Icon(Icons.apps, color: _defaultColor),
-          activeIcon: Icon(Icons.apps, color: _activeColor),
+          icon: Image.asset(
+            'assets/images/tab_unselect_manager.png',
+            width: 24,
+            height: 24,
+          ),
+          activeIcon: Image.asset(
+            'assets/images/tab_unselect_manager.png',
+            width: 24,
+            height: 24,
+          ),
           title: Text(
             '管理',
             style: TextStyle(
                 color: _currentIndex != 1 ? _defaultColor : _activeColor),
           )),
       BottomNavigationBarItem(
-          icon: Icon(Icons.mode_comment, color: _defaultColor),
-          activeIcon: Icon(Icons.mode_comment, color: _activeColor),
+          icon: Image.asset(
+            'assets/images/tab_unselect_service.png',
+            width: 24,
+            height: 24,
+          ),
+          activeIcon: Image.asset(
+            'assets/images/tab_select_service.png',
+            width: 24,
+            height: 24,
+          ),
           title: Text(
             '客服',
             style: TextStyle(
                 color: _currentIndex != 2 ? _defaultColor : _activeColor),
           )),
       BottomNavigationBarItem(
-          icon: Icon(Icons.account_circle, color: _defaultColor),
-          activeIcon: Icon(Icons.account_circle, color: _activeColor),
+          icon: Image.asset(
+            'assets/images/tab_unselect_me.png',
+            width: 24,
+            height: 24,
+          ),
+          activeIcon: Image.asset(
+            'assets/images/tab_select_me.png',
+            width: 24,
+            height: 24,
+          ),
           title: Text(
             '我的',
             style: TextStyle(
                 color: _currentIndex != 3 ? _defaultColor : _activeColor),
           )),
-
     ];
   }
 
@@ -91,6 +122,7 @@ class _TabNavigatorState extends State<TabNavigator> {
           currentIndex: _currentIndex,
           onTap: (index) {
             setState(() {
+              debugPrint("currentindex:" + index.toString());
               _currentIndex = index;
             });
             _controller.jumpToPage(index);

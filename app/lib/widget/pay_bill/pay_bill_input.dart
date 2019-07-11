@@ -2,7 +2,11 @@ import 'package:app/res/res_index.dart';
 import 'package:flutter/material.dart';
 
 class PayBillInputWidget extends StatelessWidget {
-  const PayBillInputWidget({Key key}) : super(key: key);
+  final TextEditingController controller;
+  final FocusNode node;
+  final bool enabled;
+
+  const PayBillInputWidget({Key key, @required this.controller, @required this.node, @required this.enabled}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -43,11 +47,11 @@ class PayBillInputWidget extends StatelessWidget {
                     child: Container(
                       padding: EdgeInsets.only(left: 10, right: 10),
                       child: TextField(
-                        controller: null,
-                        focusNode: null,
+                        controller: controller,
+                        focusNode: node,
                         obscureText: false,
-                        keyboardType: TextInputType.text,
-                        maxLines: null,
+                        keyboardType: TextInputType.number,
+                        enabled: enabled,
                         style: TextStyle(
                           fontSize: 24,
                           fontWeight: FontWeight.w400,

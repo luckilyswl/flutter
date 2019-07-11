@@ -407,7 +407,7 @@ class _ManagerPageState extends State<ManagerPage>
                   ),
                 ),
 
-                _banner != null
+                _banner != null && _banner.length > 0
                     ? new Container(
                   width: double.infinity,
                   margin: EdgeInsets.only(left: 14, right: 14),

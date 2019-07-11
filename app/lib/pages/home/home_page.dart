@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:math' as math;
 import 'package:app/model/app_init_bean.dart' as AppInit;
 import 'package:app/model/home_link_picker_bean.dart';
+import 'package:app/model/req_business_list_bean.dart';
 import 'package:app/model/search_condition_bean.dart' as SC;
 import 'package:app/api/api.dart';
 import 'package:app/http.dart';
@@ -17,6 +18,8 @@ import 'package:app/model/event.dart';
 import 'package:app/pages/pages_index.dart';
 import 'package:app/model/home_info_bean.dart' as HomeInfo;
 import 'package:app/model/home_buiness_list_bean.dart' as BusinessInfo;
+import 'package:app/constant.dart';
+import 'package:pull_to_refresh/pull_to_refresh.dart';
 
 /*
  * 首页
@@ -28,16 +31,13 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage>
     with TickerProviderStateMixin, AutomaticKeepAliveClientMixin {
-  final style12white = TextStyle(fontSize: 12, color: Colors.white);
-  final style12a6a6a6 = TextStyle(fontSize: 12, color: ThemeColors.colorA6A6A6);
-
   String _searchMotion;
   String _searchTip;
   bool _isCompany = false;
   HomeInfo.DataBean _dataBean;
   List<HomeInfo.TopMenuListBean> _topMenuList;
   List<HomeInfo.QuickDataListBean> _quickDataList;
-  List<BusinessInfo.BusinessList> _businessList = new List();
+  List<BusinessInfo.BusinessList> _businessList;
 
   //快速滚动到餐厅栏位置时间
   final int scrollToTopDuration = 110;
@@ -72,7 +72,7 @@ class _HomePageState extends State<HomePage>
   AppInit.CurrentCity currentCity;
 
   //更多数据
-  List<MoreModel> moreLists;
+  List<MoreModel> moreLists = [];
 
   //餐厅筛选栏key
   GlobalKey keyHall = GlobalKey(debugLabel: 'keyHall');
@@ -98,11 +98,14 @@ class _HomePageState extends State<HomePage>
   //城市选择器内容
   CitySelectorPopupWindow citySelectorPopupWindow;
 
+  //商家列表接口请求bean
+  ReqBusinessListBean reqBusinessListBean;
+
+  //刷新控制器
+  RefreshController _refreshController;
+
   //渐变色线段距离顶部距离
   var lineOffsetTop = 100.0;
-
-  //是否显示渐变线段
-  var isShowLine = true;
 
   //快速预订/团建部分
   var fastBookHeight = 0.0;
@@ -120,7 +123,7 @@ class _HomePageState extends State<HomePage>
   var _tabIndex = 0;
 
   //GridView组件
-  List<Widget> gridItems = new List();
+  List<Widget> gridItems = List();
 
   //快速预订宽高
   var fastBookIconWidth = 0.0;
@@ -133,7 +136,7 @@ class _HomePageState extends State<HomePage>
   var isShowHallTimeSelector = true;
 
   //顶部4个action
-  List<Widget> mainActions = new List();
+  List<Widget> mainActions = List();
 
   //餐厅列表
   var hallList = [];
@@ -172,22 +175,38 @@ class _HomePageState extends State<HomePage>
   //PopupWindow的类型
   int popupType = 0;
 
+  //当前加载的页数
+  int page = 1;
+
   //当前餐厅筛选栏PopupWindow是否显示
   bool isHallPopupShow = false;
 
   //是否为第一次滚动测量组件宽高
   bool isFirstScrollToMeasure = true;
 
+  //是否为空数据
+  bool isEmpty = false;
+
+  //当前城市名称
+  String _currentCityName;
+
+  //当前城市id
+  int _currentCityId;
+
+  //是否显示悬浮顶部actionbar
+  bool isShowFloatingActionBar = false;
+
   @override
   void initState() {
     initData();
-
     _tabs = [
       Tab(text: '快速预订'),
       Tab(text: '团建&会议'),
     ];
     _tabController =
         TabController(initialIndex: 0, length: _tabs.length, vsync: this);
+
+    _refreshController = RefreshController(initialRefresh: false);
 
     _nameController = TextEditingController();
     _nameController.addListener(() {
@@ -211,51 +230,17 @@ class _HomePageState extends State<HomePage>
     bitData = [];
     budgetData = [];
     if (DataUtils.getAppInitInfo() != null) {
-      cityList = HomeFilterUtils.changeOpenCityDataToCityModelData(
-          DataUtils.getAppInitInfo().openCitys);
       currentCity = DataUtils.getAppInitInfo().currentCity;
+      _currentCityName = currentCity.cityName;
+      _currentCityName ??= '广州市';
+      _currentCityId = currentCity.cityId;
+      _currentCityId ??= 2253;
+      cityList = HomeFilterUtils.changeOpenCityDataToCityModelData(
+          DataUtils.getAppInitInfo().openCitys, currentCity.cityName);
     } else {
       currentCity = AppInit.CurrentCity(cityId: 2253, cityName: '广州市');
       cityList = <CityModel>[CityModel(city: '广州市', hasBg: true)];
     }
-
-    moreLists = [
-      MoreModel(type: '距离', showSingleCheck: false, gridData: [
-        GridDataListBean(title: '离我最近'),
-      ]),
-      MoreModel(type: '环境', gridData: [
-        GridDataListBean(title: '高档会所'),
-        GridDataListBean(title: '私房菜'),
-        GridDataListBean(title: '无敌江景'),
-        GridDataListBean(title: '星级酒店'),
-        GridDataListBean(title: '别墅'),
-        GridDataListBean(title: '更多', isShowMore: true),
-      ]),
-      MoreModel(type: '包房设施', gridData: [
-        GridDataListBean(title: '电视'),
-        GridDataListBean(title: '洗手间'),
-        GridDataListBean(title: '麻将桌'),
-        GridDataListBean(title: '茶桌'),
-        GridDataListBean(title: 'KTV设备'),
-        GridDataListBean(title: '投影'),
-      ]),
-      MoreModel(type: '包房设施', gridData: [
-        GridDataListBean(title: '电视'),
-        GridDataListBean(title: '洗手间'),
-        GridDataListBean(title: '麻将桌'),
-        GridDataListBean(title: '茶桌'),
-        GridDataListBean(title: 'KTV设备'),
-        GridDataListBean(title: '投影'),
-      ]),
-      MoreModel(type: '包房设施', gridData: [
-        GridDataListBean(title: '电视'),
-        GridDataListBean(title: '洗手间'),
-        GridDataListBean(title: '麻将桌'),
-        GridDataListBean(title: '茶桌'),
-        GridDataListBean(title: 'KTV设备'),
-        GridDataListBean(title: '投影'),
-      ]),
-    ];
 
     _initHallFilterPopupWindow();
 
@@ -278,6 +263,12 @@ class _HomePageState extends State<HomePage>
     super.initState();
   }
 
+  @override
+  void dispose() {
+    super.dispose();
+    _refreshController.dispose();
+  }
+
   void initData() {
     ///首页接口
     dio.get(Api.INDEX_HOME).then((data) {
@@ -292,18 +283,27 @@ class _HomePageState extends State<HomePage>
           _topMenuList = _dataBean.topMenu;
           _quickDataList = _dataBean.quickData;
 
+          //保存推荐内容
+          SpUtil.putString(Constant.sp_search_motion, _searchMotion);
+          SpUtil.putString(Constant.sp_search_tip, _searchTip);
+
           Future.delayed(Duration(milliseconds: 200), () {
             //重新测量餐厅筛选栏offsetTop
-            RenderBox hall = keyHall.currentContext.findRenderObject();
-            Offset offset = hall.localToGlobal(Offset.zero);
-            offsetHallTop = offset.dy - 75;
+            if (keyHall.currentContext != null) {
+              RenderBox hall = keyHall.currentContext.findRenderObject();
+              Offset offset = hall.localToGlobal(Offset.zero);
+              offsetHallTop = offset.dy - 75;
+            }
 
             //重新测量快速预订/团建高度
-            RenderBox fastBook = keyFastBook.currentContext.findRenderObject();
-            if (_isCompany) {
-              fastBookHeight = fastBook.size.height + 145;
-            } else {
-              fastBookHeight = fastBook.size.height + 38;
+            if (keyFastBook.currentContext != null) {
+              RenderBox fastBook =
+                  keyFastBook.currentContext.findRenderObject();
+              if (_isCompany) {
+                fastBookHeight = fastBook.size.height + 145;
+              } else {
+                fastBookHeight = fastBook.size.height + 38;
+              }
             }
           });
         }
@@ -333,22 +333,55 @@ class _HomePageState extends State<HomePage>
               searchConditionData.numbers);
           budgetData = HomeFilterUtils.changePriceOptionDataToScrollData(
               searchConditionData.priceOption);
+          moreLists =
+              HomeFilterUtils.changeDataToMoreModelData(searchConditionData);
         });
       }
     });
 
-    ///商家列表
-    dio.get(Api.BUSINESS_LIST,
-        queryParameters: {"page": "1", "page_size": "20"}).then((data) {
+    _businessList = [];
+
+    ///商家列表请求数据
+    reqBusinessListBean = ReqBusinessListBean();
+    _getBusinessList();
+  }
+
+  ///获取商家列表
+  _getBusinessList() {
+    dio
+        .get(Api.BUSINESS_LIST, queryParameters: reqBusinessListBean.toJson())
+        .then((data) {
       var sources = jsonDecode(data.data);
       BusinessInfo.HomeBusinessInfo businessInfo =
           BusinessInfo.HomeBusinessInfo.fromJson(sources);
       if (businessInfo != null && businessInfo.errorCode == Api.SUCCESS_CODE) {
-        _businessList = businessInfo.data.list;
+        isEmpty = ObjectUtil.isEmptyList(businessInfo.data.list);
+        if (_refreshController.isLoading) {
+          if (isEmpty) {
+            _refreshController.loadNoData();
+          } else {
+            _refreshController.loadComplete();
+            reqBusinessListBean.page = '${++page}';
+          }
+        }
+        setState(() {
+          if (isEmpty && 1 == page) {
+            _businessList.clear();
+            _businessList.add(null);
+            page = 1;
+            reqBusinessListBean.page = '1';
+          } else {
+            _businessList.addAll(businessInfo.data.list);
+          }
+        });
       } else {
+        if (_refreshController.isLoading) {
+          _refreshController.loadFailed();
+        }
         Toast.toast(context, businessInfo.msg);
       }
     });
+    print('${reqBusinessListBean.toJson()}');
   }
 
   /// 顶部菜单
@@ -376,6 +409,13 @@ class _HomePageState extends State<HomePage>
         firstData: dateData,
         secondData: timeData,
         callback: (results) {
+          reqBusinessListBean.bookTime =
+              '${searchConditionData.date[results[0]].date}' +
+                  ' ${timeData[1].title}';
+          _businessList?.clear();
+          page = 1;
+          reqBusinessListBean.page = '1';
+          _getBusinessList();
           _dismissHallFilterPopupWindow();
         },
       ),
@@ -383,6 +423,12 @@ class _HomePageState extends State<HomePage>
         title: '，几位？',
         firstData: bitData,
         callback: (results) {
+          reqBusinessListBean.numbers =
+              searchConditionData.numbers[results[0]].toString();
+          _businessList?.clear();
+          page = 1;
+          reqBusinessListBean.page = '1';
+          _getBusinessList();
           _dismissHallFilterPopupWindow();
         },
       ),
@@ -390,6 +436,13 @@ class _HomePageState extends State<HomePage>
         title: '，预算多少？',
         firstData: budgetData,
         callback: (results) {
+          reqBusinessListBean.priceOption = searchConditionData
+              .priceOption.items[results[0]].value
+              .toString();
+          _businessList?.clear();
+          page = 1;
+          reqBusinessListBean.page = '1';
+          _getBusinessList();
           _dismissHallFilterPopupWindow();
         },
         isBigMargin: true,
@@ -400,11 +453,28 @@ class _HomePageState extends State<HomePage>
           _dismissHallFilterPopupWindow();
         },
         onFinishEvent: (firstIndex, secondIndex) {
-          _dismissHallFilterPopupWindow();
           setState(() {
             areaIndex = firstIndex;
             areaSubIndex = secondIndex;
           });
+
+          //二级列表不能选择
+          if (0 == firstIndex) {
+            reqBusinessListBean.areaId = '';
+            reqBusinessListBean.circleId = '';
+          } else {
+            reqBusinessListBean.areaId =
+                areaSelectorBeans[firstIndex].id.toString();
+            reqBusinessListBean.circleId = areaSelectorBeans[firstIndex]
+                .subItems[secondIndex]
+                .id
+                .toString();
+          }
+          _businessList?.clear();
+          page = 1;
+          reqBusinessListBean.page = '1';
+          _getBusinessList();
+          _dismissHallFilterPopupWindow();
         },
         firstLevelIndex: areaIndex,
         secondLevelIndex: areaSubIndex,
@@ -416,11 +486,25 @@ class _HomePageState extends State<HomePage>
             _dismissHallFilterPopupWindow();
           },
           onFinishEvent: (firstIndex, secondIndex) {
-            _dismissHallFilterPopupWindow();
             setState(() {
               dishIndex = firstIndex;
               dishSubIndex = secondIndex;
             });
+
+            //二级列表不能选择
+            if (0 == firstIndex) {
+              reqBusinessListBean.dishes = '';
+            } else {
+              reqBusinessListBean.dishes = dishSelectorBeans[firstIndex]
+                  .subItems[secondIndex]
+                  .id
+                  .toString();
+            }
+            _businessList?.clear();
+            page = 1;
+            reqBusinessListBean.page = '1';
+            _getBusinessList();
+            _dismissHallFilterPopupWindow();
           },
           firstLevelIndex: dishIndex,
           secondLevelIndex: dishSubIndex,
@@ -428,6 +512,32 @@ class _HomePageState extends State<HomePage>
       hallMoreSelector: HallMoreSelector(
         moreLists: moreLists,
         dismissAction: _dismissHallFilterPopupWindow,
+        sureCallback: () {
+          String param = '';
+          moreLists.forEach((f) {
+            param = '';
+            f.values.forEach((a) => param += ',$a');
+            if (0 != f.values.length) {
+              param = param.substring(1, param.length);
+            }
+
+            if (Constant.more_filter_room_type == f.key) {
+              reqBusinessListBean.roomType = param;
+            } else if (Constant.more_filter_environment == f.key) {
+              reqBusinessListBean.environment = param;
+            } else if (Constant.more_filter_distance_order == f.key) {
+              reqBusinessListBean.distanceOrder = param;
+            } else if (Constant.more_filter_devices == f.key) {
+              reqBusinessListBean.devices = param;
+            } else if (Constant.more_filter_scene == f.key) {
+              reqBusinessListBean.scene = param;
+            }
+          });
+          _businessList?.clear();
+          page = 1;
+          reqBusinessListBean.page = '1';
+          _getBusinessList();
+        },
       ),
     );
 
@@ -445,22 +555,32 @@ class _HomePageState extends State<HomePage>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      resizeToAvoidBottomPadding: false,
       body: Stack(
         children: <Widget>[
           Container(
-            height: 50.4,
-            decoration: BoxDecoration(gradient: Gradients.blueLinearGradient),
+            height: 199,
+            width: ScreenUtil.getScreenW(context),
+            child: Image.asset(
+              'assets/images/ic_home_bg.png',
+              fit: BoxFit.fill,
+            ),
           ),
           Container(
-            margin: const EdgeInsets.only(top: 25),
+            margin: EdgeInsets.only(top: MediaQuery.of(context).padding.top),
 
             ///滚动监听
             child: NotificationListener(
               onNotification: (ScrollNotification notification) {
+                ///不处理横向滚动
+                if (Axis.horizontal == notification.metrics.axis) {
+                  return;
+                }
+
                 scrollY = notification.metrics.pixels;
 
-                //滑到顶部清除输入框的焦点
-                if (172 <= scrollY &&
+                ///滑到顶部清除输入框的焦点
+                if (90 <= scrollY &&
                     (_nameFocusNode.hasFocus || _phoneFocusNode.hasFocus)) {
                   _nameFocusNode.unfocus();
                   _phoneFocusNode.unfocus();
@@ -468,31 +588,24 @@ class _HomePageState extends State<HomePage>
 
                 if (isFirstScrollToMeasure) {
                   isFirstScrollToMeasure = false;
-                  //重新测量餐厅筛选栏offsetTop
+
+                  ///重新测量餐厅筛选栏offsetTop
                   RenderBox hall = keyHall.currentContext.findRenderObject();
                   Offset offset = hall.localToGlobal(Offset.zero);
                   offsetHallTop = offset.dy - 75;
 
-                  //重新测量快速预订/团建高度
+                  ///重新测量快速预订/团建高度
                   RenderBox fastBook =
                       keyFastBook.currentContext.findRenderObject();
                   if (_isCompany) {
                     fastBookHeight = fastBook.size.height + 145;
                   } else {
-                    fastBookHeight = fastBook.size.height + 38;
+                    fastBookHeight = fastBook.size.height + 10;
                   }
                 }
 
                 setState(() {
-                  ///用渐变色线段处理组件之间默认的距离
-                  if (25 < scrollY) {
-                    isShowLine = false;
-                  } else {
-                    isShowLine = true;
-                    lineOffsetTop = 100 - scrollY;
-                  }
-
-                  //快速预订显示/隐藏
+                  ///快速预订显示/隐藏
                   if (fastBookHeight <= scrollY) {
                     isShowFastBookIcon = true;
                   }
@@ -507,50 +620,63 @@ class _HomePageState extends State<HomePage>
                     }
                   }
 
+                  ///悬浮顶部actionbar
+                  if (_isCompany) {
+                    if (25 <= scrollY) {
+                      isShowFloatingActionBar = true;
+                    } else {
+                      isShowFloatingActionBar = false;
+                    }
+                  } else {
+                    isShowFloatingActionBar = true;
+                  }
+
                   ///处理餐厅栏悬浮问题
                   isShowFloatingHall = offsetHallTop <= scrollY;
                 });
               },
-              child: CustomScrollView(
-                controller: _scrollController,
-                slivers: <Widget>[
-                  SliverToBoxAdapter(
-                    child: Container(
-                      padding: const EdgeInsets.only(left: 14, top: 5),
-                      decoration:
-                          BoxDecoration(gradient: Gradients.blueLinearGradient),
-                      height: 25,
-                      alignment: Alignment.bottomLeft,
-                      child: Text(
-                        '广州请上座信息科技有限公司',
-                        style: const TextStyle(
-                            fontSize: 16,
-                            color: Colors.white,
-                            fontWeight: FontWeight.w500),
-                      ),
-                    ),
-                  ),
-                  _buildSearch(),
-                  _topMenuList != null && _topMenuList.length != 0
-                      ? SliverToBoxAdapter(
-                          child: Container(
-                            width: double.infinity,
-                            decoration: BoxDecoration(
-                                gradient: Gradients.blueLinearGradient),
+              child: SmartRefresher(
+                controller: _refreshController,
+                enablePullDown: false,
+                enablePullUp: true,
+                onLoading: _getBusinessList,
+                footer: ClassicFooter(
+                  loadingText: '加载中...',
+                  noDataText: '没有更多数据',
+                  idleText: '上拉加载更多...',
+                  failedText: '加载失败!',
+                ),
+                child: ListView(
+                  controller: _scrollController,
+                  scrollDirection: Axis.vertical,
+                  shrinkWrap: true,
+                  children: <Widget>[
+                    _isCompany
+                        ? Container(
+                            padding: const EdgeInsets.only(left: 14, top: 5),
+                            height: 25,
+                            alignment: Alignment.bottomLeft,
+                            child: Text(
+                              '广州请上座信息科技有限公司',
+                              style: const TextStyle(
+                                  fontSize: 16,
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w500),
+                            ),
+                          )
+                        : SizedBox(),
+                    _buildSearch(),
+                    _topMenuList != null && _topMenuList.length != 0
+                        ? Container(
+                            width: ScreenUtil.getScreenW(context),
                             height: 107,
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                               children: _initMainActions(),
                             ),
-                          ),
-                        )
-                      : new SliverToBoxAdapter(
-                          child: new Container(
-                            height: 0,
-                          ),
-                        ),
-                  SliverToBoxAdapter(
-                    child: Container(
+                          )
+                        : SizedBox(),
+                    Container(
                       color: Colors.white,
                       child: Column(
                         children: <Widget>[
@@ -561,12 +687,8 @@ class _HomePageState extends State<HomePage>
                               children: <Widget>[
                                 _buildTabBar(),
                                 _buildDropDownTitle(
-                                  icon: Image.asset(
-                                    'assets/images/ic_message.png',
-                                    width: 14,
-                                    height: 16,
-                                    fit: BoxFit.fill,
-                                  ),
+                                  icon: Image.asset('assets/images/ic_edit.png',
+                                      width: 24, height: 24),
                                   title: textFastBookTime,
                                   callback: _showTimeSelector,
                                 ),
@@ -576,29 +698,37 @@ class _HomePageState extends State<HomePage>
                                     ? _buildRegionAndType()
                                     : _buildNameAndPhone(),
                                 _buildSearchBtn(),
+                                SizedBox(height: 14)
                               ],
                             ),
                           ),
-                          Container(height: 14, color: ThemeColors.colorF2F2F2),
-                          SizedBox(height: 20),
-                          GridView.count(
-                            shrinkWrap: true,
-                            padding: const EdgeInsets.all(0),
-                            crossAxisCount: 4,
-                            scrollDirection: Axis.vertical,
-                            crossAxisSpacing: 4,
-                            mainAxisSpacing: 14,
-
-                            ///按宽高比例显示
-                            childAspectRatio: 1.5,
-                            physics: NeverScrollableScrollPhysics(),
-                            //children: gridItems != null ? gridItems : new List(),
-                            children: _buildGridTileList(_quickDataList != null
-                                ? _quickDataList.length
-                                : 0),
-                          ),
-                          SizedBox(height: 20),
                           Container(height: 10, color: ThemeColors.colorF2F2F2),
+                          ObjectUtil.isEmptyList(_quickDataList)
+                              ? SizedBox()
+                              : SizedBox(height: 20),
+                          ObjectUtil.isEmptyList(_quickDataList)
+                              ? SizedBox()
+                              : GridView.count(
+                                  shrinkWrap: true,
+                                  padding: const EdgeInsets.all(0),
+                                  crossAxisCount: 4,
+                                  scrollDirection: Axis.vertical,
+                                  crossAxisSpacing: 4,
+                                  mainAxisSpacing: 14,
+
+                                  ///按宽高比例显示
+                                  childAspectRatio: 1.5,
+                                  physics: NeverScrollableScrollPhysics(),
+                                  children:
+                                      _buildGridTileList(_quickDataList.length),
+                                ),
+                          ObjectUtil.isEmptyList(_quickDataList)
+                              ? SizedBox()
+                              : SizedBox(height: 20),
+                          ObjectUtil.isEmptyList(_quickDataList)
+                              ? SizedBox()
+                              : Container(
+                                  height: 10, color: ThemeColors.colorF2F2F2),
                           _buildHallTitle(),
                           Container(
                             key: keyHall,
@@ -646,23 +776,168 @@ class _HomePageState extends State<HomePage>
                             physics: NeverScrollableScrollPhysics(),
                             shrinkWrap: true,
                             itemBuilder: (context, i) {
-                              return new GestureDetector(
-                                  onTap: () {
-                                    _clickRestaurantItem(i);
-                                  },
+                              ///显示没有找到符合的条件内容
+                              if (0 == i && isEmpty) {
+                                return Container(
+                                  height: 487,
+                                  width: ScreenUtil.getScreenW(context),
+                                  color: Colors.white,
+                                  alignment: Alignment.center,
+                                  child: Column(
+                                    children: <Widget>[
+                                      SizedBox(height: 40),
+                                      Container(
+                                        width: 60,
+                                        height: 60,
+                                        color: Colors.grey,
+                                      ),
+                                      SizedBox(height: 14),
+                                      Text(
+                                        '“ 没找到符合的条件内容 ”',
+                                        style: const TextStyle(
+                                            fontSize: 14,
+                                            color: ThemeColors.colorA6A6A6,
+                                            fontWeight: FontWeight.normal,
+                                            decoration: TextDecoration.none),
+                                      ),
+                                      SizedBox(height: 20),
+                                      Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: <Widget>[
+                                          Container(
+                                            width: 80,
+                                            height: 28,
+                                            decoration: BoxDecoration(
+                                              borderRadius:
+                                                  BorderRadius.circular(14),
+                                              border: Border.all(
+                                                  color:
+                                                      ThemeColors.colorA6A6A6,
+                                                  width: 1),
+                                            ),
+                                            child: FlatButton(
+                                              onPressed: () =>
+                                                  Application.getEventBus()
+                                                      .fire(EventType.goServer),
+                                              padding: const EdgeInsets.all(0),
+                                              shape: RoundedRectangleBorder(
+                                                  borderRadius:
+                                                      BorderRadius.circular(
+                                                          14)),
+                                              child: Text(
+                                                '联系客服',
+                                                style: const TextStyle(
+                                                    fontSize: 12,
+                                                    color:
+                                                        ThemeColors.color404040,
+                                                    fontWeight:
+                                                        FontWeight.normal,
+                                                    decoration:
+                                                        TextDecoration.none),
+                                              ),
+                                            ),
+                                          ),
+                                          SizedBox(width: 14),
+                                          Container(
+                                            width: 80,
+                                            height: 28,
+                                            decoration: BoxDecoration(
+                                              borderRadius:
+                                                  BorderRadius.circular(14),
+                                            ),
+                                            child: RaisedButton(
+                                              onPressed: () {
+                                                reqBusinessListBean.keywords =
+                                                    '';
+                                                reqBusinessListBean.areaId = '';
+                                                reqBusinessListBean.roomType =
+                                                    '';
+                                                reqBusinessListBean
+                                                    .environment = '';
+                                                reqBusinessListBean.devices =
+                                                    '';
+                                                reqBusinessListBean
+                                                    .distanceOrder = '';
+                                                reqBusinessListBean.dishes = '';
+                                                reqBusinessListBean.circleId =
+                                                    '';
+                                                reqBusinessListBean
+                                                    .priceOption = '';
+                                                reqBusinessListBean.numbers =
+                                                    '';
+                                                reqBusinessListBean.bookTime =
+                                                    '';
+                                                reqBusinessListBean.priceOrder =
+                                                    '';
+                                                reqBusinessListBean.scene = '';
+                                                reqBusinessListBean.page = '1';
+                                                dateData?.forEach(
+                                                    (f) => f.hasBg = false);
+                                                timeData?.forEach(
+                                                    (f) => f.hasBg = false);
+                                                bitData?.forEach(
+                                                    (f) => f.hasBg = false);
+                                                budgetData?.forEach(
+                                                    (f) => f.hasBg = false);
+                                                moreLists?.forEach((f) =>
+                                                    f.gridData.forEach((a) =>
+                                                        a.hasBg = false));
+                                                moreLists?.forEach(
+                                                    (f) => f.values?.clear());
+                                                areaIndex = 0;
+                                                dishIndex = 0;
+                                                _businessList?.clear();
+                                                page = 1;
+                                                _refreshController
+                                                    .loadComplete();
+                                                _getBusinessList();
+                                              },
+                                              color: ThemeColors.color404040,
+                                              padding: const EdgeInsets.all(0),
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(14),
+                                              ),
+                                              child: Text(
+                                                '重置条件',
+                                                style: const TextStyle(
+                                                    fontSize: 12,
+                                                    color: Colors.white,
+                                                    fontWeight:
+                                                        FontWeight.normal,
+                                                    decoration:
+                                                        TextDecoration.none),
+                                              ),
+                                            ),
+                                          )
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              }
+
+                              return GestureDetector(
+                                onTap: () {
+                                  _clickRestaurantItem(i);
+                                },
+                                child: Container(
+                                  color: Colors.transparent,
                                   child: ItemHall(
-                                      imgUrl: _businessList[i].imgUrl,
-                                      title: _businessList[i].title,
-                                      price: '¥' +
-                                          _businessList[i].perPerson +
-                                          "/人",
-                                      //location: '粤菜 | 广州大道南 · 1.95km',
-                                      location: _businessList[i].dishes +
-                                          ' | ' +
-                                          _businessList[i].zoneName +
-                                          " · " +
-                                          _businessList[i].distance,
-                                      remark: _businessList[i].shopName));
+                                    imgUrl: _businessList[i]?.imgUrl,
+                                    title: _businessList[i]?.title,
+                                    price: '¥' +
+                                        _businessList[i]?.perPerson +
+                                        "/人",
+                                    location: _businessList[i]?.dishes +
+                                        ' | ' +
+                                        _businessList[i]?.zoneName +
+                                        " · " +
+                                        _businessList[i]?.distance,
+                                    remark: _businessList[i]?.shopName,
+                                  ),
+                                ),
+                              );
                             },
                             separatorBuilder: (context, i) {
                               return Container(
@@ -676,28 +951,26 @@ class _HomePageState extends State<HomePage>
                         ],
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
-          Container(
-            margin: const EdgeInsets.only(top: 24),
-            height: 2,
-            decoration: BoxDecoration(gradient: Gradients.blueLinearGradient),
-          ),
           Offstage(
-            offstage: !isShowLine,
+            offstage: !isShowFloatingActionBar,
             child: Container(
-              margin: EdgeInsets.only(top: lineOffsetTop),
-              height: 1,
-              decoration: BoxDecoration(gradient: Gradients.blueLinearGradient),
+              decoration: BoxDecoration(
+                  image: DecorationImage(
+                      image: AssetImage('assets/images/ic_action_bar_bg.png'),
+                      fit: BoxFit.fill)),
+              margin: EdgeInsets.only(top: MediaQuery.of(context).padding.top),
+              child: _buildSearch(),
             ),
           ),
           Offstage(
             offstage: !isShowFloatingHall,
             child: Container(
-              margin: const EdgeInsets.only(top: 75),
+              margin: const EdgeInsets.only(top: 74),
               width: double.infinity,
               color: Colors.white,
               height: hallHeight,
@@ -716,15 +989,16 @@ class _HomePageState extends State<HomePage>
     );
   }
 
+  ///餐厅列表item点击事件,跳转到餐厅详情页
   void _clickRestaurantItem(int i) {
-    Navigator.of(context).push(CupertinoPageRoute(builder: (_) {
+    Navigator.of(context).push(MaterialPageRoute(builder: (_) {
       return BusinessDetailPage(_businessList[i].id);
     }));
   }
 
   /// 快速菜单网格布局
   List<Widget> _buildGridTileList(int length) {
-    List<Widget> widgetList = new List();
+    List<Widget> widgetList = List();
     for (int i = 0; i < length; i++) {
       widgetList.add(_buildGridItem(_quickDataList[i].imgUrl,
           _quickDataList[i].adName, () => _clickQuickMenuItem(i)));
@@ -755,24 +1029,43 @@ class _HomePageState extends State<HomePage>
           ),
           Positioned(
             right: 0,
-            child: Row(
-              children: <Widget>[
-                Text(
-                  '更多',
-                  style: style12a6a6a6,
-                ),
-                Container(
-                  width: 14,
-                  height: 14,
-                  alignment: Alignment.centerRight,
-                  child: Image.asset(
-                    'assets/images/ic_message.png',
-                    width: 9,
-                    height: 9,
-                    fit: BoxFit.fill,
+            child: GestureDetector(
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) {
+                      return SearchResultPage(
+                          dateData: dateData,
+                          timeData: timeData,
+                          bitData: bitData,
+                          budgetData: budgetData,
+                          moreLists: moreLists,
+                          areaIndex: areaIndex,
+                          dishIndex: dishIndex);
+                    },
+                    settings: RouteSettings(arguments: reqBusinessListBean),
                   ),
-                ),
-              ],
+                );
+              },
+              child: Row(
+                children: <Widget>[
+                  Text(
+                    '更多',
+                    style: FontStyles.style12A6A6A6,
+                  ),
+                  Container(
+                    width: 14,
+                    height: 14,
+                    alignment: Alignment.centerRight,
+                    child: Image.asset(
+                      'assets/images/ic_more_grey.png',
+                      width: 9,
+                      height: 9,
+                      fit: BoxFit.fill,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ],
@@ -785,21 +1078,19 @@ class _HomePageState extends State<HomePage>
     return Row(
       children: <Widget>[
         0 == _tabIndex
-            ? GestureDetector(
-                onTap: () {
-                  Application.getEventBus().fire(EventType.goServer);
-                },
-                child: Container(
-                  width: 94,
-                  height: 28,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      width: 1,
-                      color: ThemeColors.colorA6A6A6,
-                    ),
-                  ),
+            ? Container(
+                width: 94,
+                height: 28,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(width: 1, color: ThemeColors.colorF2C785),
+                ),
+                child: FlatButton(
+                  padding: const EdgeInsets.all(0),
+                  onPressed: () =>
+                      Application.getEventBus().fire(EventType.goServer),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20)),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: <Widget>[
@@ -808,7 +1099,7 @@ class _HomePageState extends State<HomePage>
                         height: 20,
                         child: Center(
                           child: Image.asset(
-                            'assets/images/ic_message.png',
+                            'assets/images/ic_phone_gold.png',
                             width: 12,
                             height: 13,
                             fit: BoxFit.fill,
@@ -829,22 +1120,41 @@ class _HomePageState extends State<HomePage>
             : SizedBox(width: 0),
         0 == _tabIndex ? SizedBox(width: 14) : SizedBox(width: 0),
         Expanded(
-          child: RaisedButton(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(4),
-            ),
-            color: ThemeColors.color1A1A1A,
-            onPressed: () {
-              if (_tabIndex == 0) {
-                //todo:跳转到商家列表
-              } else {
-                _privateBooking();
-              }
-            },
-            child: Text(
-              0 == _tabIndex ? '搜索' : '提交',
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 16, color: Colors.white),
+          child: Container(
+            height: 40,
+            decoration: BoxDecoration(
+                gradient: Gradients.blueLinearGradient,
+                borderRadius: BorderRadius.circular(4)),
+            child: FlatButton(
+              padding: const EdgeInsets.all(0),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(4),
+              ),
+              color: Colors.transparent,
+              onPressed: () {
+                if (_tabIndex == 0) {
+                  //todo:跳转到商家列表
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                        builder: (context) => SearchResultPage(
+                              dateData: dateData,
+                              timeData: timeData,
+                              bitData: bitData,
+                              areaIndex: areaIndex,
+                              dishIndex: dishIndex,
+                            ),
+                        settings:
+                            RouteSettings(arguments: reqBusinessListBean)),
+                  );
+                } else {
+                  _privateBooking();
+                }
+              },
+              child: Text(
+                0 == _tabIndex ? '搜索' : '提交',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 16, color: ThemeColors.colorF2C785),
+              ),
             ),
           ),
         ),
@@ -855,7 +1165,7 @@ class _HomePageState extends State<HomePage>
   _privateBooking() {
     debugPrint('_privateBooking');
     if (phone.length == 11 && name.length > 0) {
-      dio.post(Api.PRIVATE_BOOK, queryParameters: {
+      dio.post(Api.PRIVATE_BOOK, data: {
         "book_time":
             '${searchConditionData.date[dateIndex].date} ${searchConditionData.time[timeIndex]}:00',
         "number": searchConditionData.numbers[numberIndex].toString(),
@@ -876,157 +1186,124 @@ class _HomePageState extends State<HomePage>
 
   ///创建搜索栏
   Widget _buildSearch() {
-    ///SliverPersistentHeader好处为可以固定高度不变同时,设置渐变背景色
-    return SliverPersistentHeader(
-      pinned: true,
-      floating: true,
-      delegate: SliverAppBarDelegate(
-        minHeight: 50,
-        maxHeight: 50,
-        child: Container(
-          decoration: BoxDecoration(gradient: Gradients.blueLinearGradient),
-          height: 50,
-          width: 50,
-          child: Row(
-            children: <Widget>[
-              GestureDetector(
-                onTap: _clickCityPick,
-                child: Container(
-                  color: Colors.transparent,
-                  height: 50,
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: <Widget>[
-                      SizedBox(width: 14),
-                      Text(currentCity.cityName, style: style12white),
-                      SizedBox(
-                        width: 20,
-                        height: double.infinity,
-                        child: Center(
-                          child: Image.asset(
-                            'assets/images/ic_message.png',
-                            width: 8,
-                            height: 4,
-                            fit: BoxFit.fill,
-                          ),
-                        ),
-                      ),
-                      SizedBox(width: 8),
-                    ],
-                  ),
-                ),
+    return Container(
+      height: 50,
+      child: Row(
+        children: <Widget>[
+          GestureDetector(
+            onTap: _clickCityPick,
+            child: Container(
+              color: Colors.transparent,
+              height: 50,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: <Widget>[
+                  SizedBox(width: 14),
+                  Text(currentCity.cityName, style: FontStyles.style12FFFFFF),
+                  Image.asset('assets/images/ic_xiala_white.png',
+                      width: 20, height: 20),
+                  SizedBox(width: 8),
+                ],
               ),
-              Expanded(
-                child: GestureDetector(
-                  onTap: _clickTopSearch,
-                  child: Container(
-                    height: 28,
-                    decoration: BoxDecoration(
-                      color: ThemeColors.colorF2F2F2,
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: <Widget>[
-                        SizedBox(
-                          width: 14,
-                          height: 14,
-                          child: Center(
-                            child: Image.asset(
-                              'assets/images/ic_message.png',
-                              width: 9,
-                              height: 9,
-                              fit: BoxFit.fill,
-                            ),
-                          ),
-                        ),
-                        SizedBox(width: 4),
-                        Text(
-                          _searchMotion != null
-                              ? _searchMotion + _searchTip
-                              : '',
-                          style: style12a6a6a6,
-                        )
-                      ],
-                    ),
-                  ),
+            ),
+          ),
+          Expanded(
+            child: GestureDetector(
+              onTap: _clickTopSearch,
+              child: Container(
+                height: 28,
+                decoration: BoxDecoration(
+                  color: ThemeColors.colorF2F2F2,
+                  borderRadius: BorderRadius.circular(14),
                 ),
-              ),
-              SizedBox(width: 18),
-              isShowFastBookIcon
-                  ? GestureDetector(
-                      onTap: () {
-                        _tabController.index = 0;
-                        setState(() {
-                          _tabIndex = 0;
-                        });
-                        Future.delayed(Duration(milliseconds: 200), () {
-                          setState(() {
-                            isShowFastBookIcon = false;
-                          });
-                        });
-                        _scrollController.animateTo(_isCompany ? 132 : 0,
-                            duration: Duration(milliseconds: 300),
-                            curve: Curves.easeIn);
-                      },
-                      child: Row(
-                        children: <Widget>[
-                          Container(
-                            color: Colors.transparent,
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: <Widget>[
-                                Image.asset(
-                                  'assets/images/ic_message.png',
-                                  width: 16,
-                                  height: 16,
-                                  fit: BoxFit.fill,
-                                ),
-                                SizedBox(height: 2),
-                                Text(
-                                  '快速预定',
-                                  textAlign: TextAlign.center,
-                                  style: const TextStyle(
-                                      fontSize: 8, color: Colors.white),
-                                )
-                              ],
-                            ),
-                          ),
-                          SizedBox(width: 10)
-                        ],
-                      ),
-                    )
-                  : SizedBox(width: 0),
-              GestureDetector(
-                onTap: () {
-                  if (isHallPopupShow) {
-                    overlayTime.remove();
-                  }
-                  Application.getEventBus().fire(EventType.goServer);
-                },
-                child: Column(
+                child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: <Widget>[
-                    Image.asset(
-                      'assets/images/ic_server.png',
-                      width: 16,
-                      height: 16,
-                      fit: BoxFit.fill,
-                    ),
-                    SizedBox(height: 2),
+                    Image.asset('assets/images/ic_search_grey.png',
+                        width: 14, height: 14, fit: BoxFit.fill),
+                    SizedBox(width: 4),
                     Text(
-                      '客服',
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(fontSize: 8, color: Colors.white),
+                      _searchMotion != null ? _searchMotion + _searchTip : '',
+                      style: FontStyles.style12A6A6A6,
                     )
                   ],
                 ),
               ),
-              SizedBox(width: 17),
-            ],
+            ),
           ),
-        ),
+          SizedBox(width: 18),
+          isShowFastBookIcon
+              ? GestureDetector(
+                  onTap: () {
+                    _tabController.index = 0;
+                    setState(() {
+                      _tabIndex = 0;
+                    });
+                    Future.delayed(Duration(milliseconds: 200), () {
+                      setState(() {
+                        isShowFastBookIcon = false;
+                      });
+                    });
+                    _scrollController.animateTo(_isCompany ? 132 : 0,
+                        duration: Duration(milliseconds: 300),
+                        curve: Curves.easeIn);
+                  },
+                  child: Row(
+                    children: <Widget>[
+                      Container(
+                        color: Colors.transparent,
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: <Widget>[
+                            Image.asset(
+                              'assets/images/ic_fastbook.png',
+                              width: 16,
+                              height: 16,
+                              fit: BoxFit.fill,
+                            ),
+                            SizedBox(height: 2),
+                            Text(
+                              '快速预定',
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
+                                  fontSize: 8, color: Colors.white),
+                            )
+                          ],
+                        ),
+                      ),
+                      SizedBox(width: 10)
+                    ],
+                  ),
+                )
+              : SizedBox(width: 0),
+          GestureDetector(
+            onTap: () {
+              if (isHallPopupShow) {
+                overlayTime.remove();
+              }
+              Application.getEventBus().fire(EventType.goServer);
+            },
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: <Widget>[
+                Image.asset(
+                  'assets/images/ic_kefu.png',
+                  width: 16,
+                  height: 16,
+                  fit: BoxFit.fill,
+                ),
+                SizedBox(height: 2),
+                Text(
+                  '客服',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(fontSize: 8, color: Colors.white),
+                )
+              ],
+            ),
+          ),
+          SizedBox(width: 17),
+        ],
       ),
     );
   }
@@ -1051,7 +1328,7 @@ class _HomePageState extends State<HomePage>
           SizedBox(height: 12),
           Text(
             text,
-            style: style12white,
+            style: FontStyles.style12FFFFFF,
           )
         ],
       ),
@@ -1076,12 +1353,12 @@ class _HomePageState extends State<HomePage>
           TabBar(
             controller: _tabController,
             tabs: _tabs,
-            labelPadding: EdgeInsets.only(top: 10),
+            labelPadding: const EdgeInsets.only(top: 10),
             isScrollable: false,
-            indicatorColor: ThemeColors.color3F4688,
+            indicatorColor: ThemeColors.colorF2C785,
             indicatorWeight: 2,
             indicatorSize: TabBarIndicatorSize.label,
-            labelColor: ThemeColors.color3F4688,
+            labelColor: ThemeColors.color404040,
             labelStyle: const TextStyle(
               fontSize: 14.0,
               fontWeight: FontWeight.w500,
@@ -1103,7 +1380,7 @@ class _HomePageState extends State<HomePage>
             child: Container(
               padding: const EdgeInsets.fromLTRB(4, 2, 4, 2),
               decoration: BoxDecoration(
-                color: ThemeColors.color555C9E,
+                gradient: Gradients.goldDarkLinearGradient,
                 borderRadius: BorderRadius.only(
                   topLeft: Radius.circular(6),
                   topRight: Radius.circular(6),
@@ -1114,7 +1391,8 @@ class _HomePageState extends State<HomePage>
               child: Text(
                 '定制',
                 textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 8, color: Colors.white),
+                style: const TextStyle(
+                    fontSize: 8, color: ThemeColors.color2A2A33),
               ),
             ),
           ),
@@ -1174,8 +1452,8 @@ class _HomePageState extends State<HomePage>
                   width: 14,
                   height: 14,
                   child: Center(
-                    child: Image.asset('assets/images/ic_message.png',
-                        width: 8, height: 4, fit: BoxFit.fill),
+                    child: Image.asset('assets/images/ic_xiala_grey.png',
+                        width: 14, height: 14),
                   ),
                 ),
               ),
@@ -1196,8 +1474,8 @@ class _HomePageState extends State<HomePage>
           Flexible(
             flex: 1,
             child: _buildDropDownTitle(
-              icon: Image.asset('assets/images/ic_message.png',
-                  width: 12, height: 16, fit: BoxFit.fill),
+              icon: Image.asset('assets/images/ic_location.png',
+                  width: 24, height: 24),
               title: areaTitle,
               subTitle: areaSubtitle,
               callback: () {
@@ -1213,8 +1491,8 @@ class _HomePageState extends State<HomePage>
           Flexible(
             flex: 1,
             child: _buildDropDownTitle(
-              icon: Image.asset('assets/images/ic_message.png',
-                  width: 20, height: 14, fit: BoxFit.fill),
+              icon: Image.asset('assets/images/ic_dish.png',
+                  width: 24, height: 24),
               title: dishTitle,
               subTitle: dishSubtitle,
               callback: () {
@@ -1251,6 +1529,19 @@ class _HomePageState extends State<HomePage>
                       .aliasName
                   : '全部';
             });
+
+            //二级列表不能选择
+            if (0 == firstIndex) {
+              reqBusinessListBean.areaId = '';
+              reqBusinessListBean.circleId = '';
+            } else {
+              reqBusinessListBean.areaId =
+                  areaSelectorBeans[firstIndex].id.toString();
+              reqBusinessListBean.circleId = areaSelectorBeans[firstIndex]
+                  .subItems[secondIndex]
+                  .id
+                  .toString();
+            }
           },
           firstLevelIndex: areaIndex,
           secondLevelIndex: areaSubIndex,
@@ -1283,6 +1574,16 @@ class _HomePageState extends State<HomePage>
                       .aliasName
                   : '全部';
             });
+
+            //二级列表不能选择
+            if (0 == firstIndex) {
+              reqBusinessListBean.dishes = '';
+            } else {
+              reqBusinessListBean.dishes = dishSelectorBeans[firstIndex]
+                  .subItems[secondIndex]
+                  .id
+                  .toString();
+            }
           },
           firstLevelIndex: dishIndex,
           secondLevelIndex: dishSubIndex,
@@ -1302,8 +1603,8 @@ class _HomePageState extends State<HomePage>
           Flexible(
             flex: 1,
             child: _buildTextEdiText(
-              tvBig: 'N',
-              tvSm: 'am',
+              image: Image.asset('assets/images/ic_fastbook_name.png',
+                  width: 24, height: 24),
               hint: '姓名',
               inputType: TextInputType.text,
               focusNode: _nameFocusNode,
@@ -1323,8 +1624,8 @@ class _HomePageState extends State<HomePage>
                 SizedBox(width: 14),
                 Expanded(
                   child: _buildTextEdiText(
-                    tvBig: 'P',
-                    tvSm: 'hon',
+                    image: Image.asset('assets/images/ic_fastbook_phone.png',
+                        width: 24, height: 24),
                     hint: '手机',
                     inputType: TextInputType.phone,
                     focusNode: _phoneFocusNode,
@@ -1341,8 +1642,7 @@ class _HomePageState extends State<HomePage>
 
   ///组件1个Text,一个EditText
   Widget _buildTextEdiText({
-    @required String tvBig,
-    @required String tvSm,
+    @required Image image,
     @required String hint,
     @required TextInputType inputType,
     @required FocusNode focusNode,
@@ -1350,23 +1650,7 @@ class _HomePageState extends State<HomePage>
   }) {
     return Row(
       children: <Widget>[
-        Container(
-          width: 28,
-          height: 24,
-          padding: const EdgeInsets.fromLTRB(2, 4, 2, 4),
-          child: RichText(
-            text: TextSpan(children: [
-              TextSpan(
-                  text: tvBig,
-                  style: const TextStyle(
-                      fontSize: 12, color: ThemeColors.color404040)),
-              TextSpan(
-                  text: tvSm,
-                  style: const TextStyle(
-                      fontSize: 8, color: ThemeColors.color404040)),
-            ]),
-          ),
-        ),
+        image,
         SizedBox(width: 10),
         Expanded(
           child: TextField(
@@ -1425,7 +1709,6 @@ class _HomePageState extends State<HomePage>
           timeData: timeData,
           bitData: bitData,
           callback: (results) {
-            print('$results');
             setState(() {
               timeSelector.remove();
               dateIndex = results[0];
@@ -1434,6 +1717,9 @@ class _HomePageState extends State<HomePage>
               textFastBookTime =
                   '${dateData[results[0]].title} ${dateData[results[0]].subTitle} ${timeData[results[1]].title}，${bitData[results[2]].title}';
             });
+            reqBusinessListBean.bookTime =
+                '${searchConditionData.date[results[0]].date}' +
+                    ' ${timeData[1].title}';
           },
           dismissAction: () => timeSelector.remove(),
         );
@@ -1444,11 +1730,6 @@ class _HomePageState extends State<HomePage>
 
   ///点击滚动到顶部
   _clickScrollToTop() {
-    //餐厅筛选栏
-    RenderBox hall = keyHall.currentContext.findRenderObject();
-    Offset offset = hall.localToGlobal(Offset.zero);
-    offsetHallTop = offset.dy - 75;
-
     _scrollController.animateTo(offsetHallTop,
         duration: Duration(milliseconds: 100), curve: Curves.easeIn);
   }
@@ -1497,21 +1778,35 @@ class _HomePageState extends State<HomePage>
 
   ///城市选择
   _clickCityPick() {
-    var marginTop = MediaQuery.of(context).padding.top + 76;
+    var marginTop = _isCompany
+        ? MediaQuery.of(context).padding.top + 75
+        : MediaQuery.of(context).padding.top + 50;
     if (25 >= scrollY) {
       marginTop -= scrollY;
     } else {
-      marginTop = MediaQuery.of(context).padding.top + 51;
+      marginTop = MediaQuery.of(context).padding.top + 50;
     }
 
     citySelectorPopupWindow = CitySelectorPopupWindow(
-      position: currentCity.cityName,
+      position: _currentCityName,
       margin: marginTop,
       cityList: cityList,
       dismissAction: () => overlayCity.remove(),
       callback: (index) {
         if (-1 == index) {
-          Toast.toast(context, '你点击了定位城市');
+          DataUtils.saveCityId(_currentCityId);
+          setState(() {
+            cityList.forEach((f) {
+              if (_currentCityName == f.city) {
+                f.hasBg = true;
+              } else {
+                f.hasBg = false;
+              }
+            });
+            currentCity = AppInit.CurrentCity(
+                cityName: _currentCityName, cityId: _currentCityId);
+          });
+          initData();
         } else {
           AppInit.OpenCitys openCity =
               DataUtils.getAppInitInfo().openCitys[index];
@@ -1561,7 +1856,7 @@ class SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
   @override
   Widget build(
       BuildContext context, double shrinkOffset, bool overlapsContent) {
-    return new SizedBox.expand(child: child);
+    return SizedBox.expand(child: child);
   }
 
   @override

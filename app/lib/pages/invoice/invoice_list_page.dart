@@ -1,5 +1,14 @@
+import 'dart:convert';
+
+import 'package:app/Application.dart';
+import 'package:app/api/api.dart';
+import 'package:app/http.dart';
+import 'package:app/model/event.dart';
+import 'package:app/model/invoice/invoice_list_bean.dart';
 import 'package:app/navigator/page_route.dart';
 import 'package:app/res/res_index.dart';
+import 'package:app/widget/invoice/invoice_list_item_widget.dart';
+import 'package:app/widget/widgets_index.dart';
 import 'package:flutter/material.dart';
 import 'package:app/res/theme_colors.dart';
 import 'package:flutter/painting.dart';
@@ -16,28 +25,54 @@ class InvoiceListPage extends StatefulWidget {
 class _InvoiceListPageState extends State<InvoiceListPage>
     with SingleTickerProviderStateMixin {
   static int enterpriseMaxNumber = 2;
-  List<String> enterpriseInvoiceList = <String>[];
-  List<String> invoiceList = <String>[];
+  List<InvoiceModel> enterpriseInvoiceList = <InvoiceModel>[];
+  List<InvoiceModel> invoiceList = <InvoiceModel>[];
   bool isOpen = false;
-  int currentIndex = -1;
+  int currentId = 0;
 
   @override
   void initState() {
-    enterpriseInvoiceList = <String>[
-      '广州请上座信息科技有限公司',
-      '广州请上座信息科技有限公司',
-      '广州请上座信息科技有限公司',
-      '广州请上座信息科技有限公司',
-      '广州请上座信息科技有限公司',
-      '广州请上座信息科技有限公司',
-    ];
-    invoiceList = <String>[
-      '李维斯',
-      '李维斯',
-      '李维斯',
-    ];
-
+    // 根据不同事件处理
+    Application.getEventBus().on<String>().listen((event) {
+      if (this.mounted) {
+        if (event == EventType.changeInvoiceList) {
+          initData();
+        }
+      }
+    });
+    initData();
     super.initState();
+  }
+
+  /*
+   * 获取列表
+   **/
+  initData() {
+    dio
+        .get(
+      Api.INVOICE_LIST,
+    )
+        .then((data) {
+      var sources = jsonDecode(data.data);
+      InvoiceListBean bean = InvoiceListBean.fromJson(sources);
+      if (bean.errorCode == Api.SUCCESS_CODE) {
+        InvoiceListDataBean dataBean = bean.data;
+        setState(() {
+          enterpriseInvoiceList = dataBean.appEnterpriseInvoice;
+          if (invoiceList.length > 0) {
+            invoiceList.removeRange(0, invoiceList.length);
+          }
+          if (dataBean.appUserInvoice.companyInvoice != null) {
+            invoiceList.addAll(dataBean.appUserInvoice.companyInvoice);
+          }
+          if (dataBean.appUserInvoice.userInvoice != null) {
+            invoiceList.addAll(dataBean.appUserInvoice.userInvoice);
+          }
+        });
+      } else {
+        Toast.toast(context, bean.msg);
+      }
+    });
   }
 
   @override
@@ -50,14 +85,17 @@ class _InvoiceListPageState extends State<InvoiceListPage>
     debugPrint('添加抬头');
   }
 
-  _toDetail() {
-    Navigator.of(context).pushNamed(Page.INVOICE_DETAIL_PAGE);
-    debugPrint('详情');
+  _toDetail(InvoiceModel invoiceModel, bool isEnterprise) {
+    debugPrint('详情' + invoiceModel.id.toString());
+    Navigator.of(context).pushNamed(Page.INVOICE_DETAIL_PAGE, arguments: {
+      "invoiceModel": invoiceModel,
+      "isEnterprise": isEnterprise
+    });
   }
 
-  _selectInvoice() {
-    debugPrint('跳转回开票页面');
-    Navigator.of(context).pop();
+  _selectInvoice(InvoiceModel invoiceModel) {
+    debugPrint('跳转回开票页面'+invoiceModel.toJson().toString());
+    Navigator.of(context).pop(invoiceModel);
   }
 
   _openWidget() {
@@ -128,109 +166,20 @@ class _InvoiceListPageState extends State<InvoiceListPage>
     }
   }
 
-  _normalWidget(String title, bool isLastOne) {
-    return Container(
-      height: 78,
-      color: Colors.white,
-      child: Container(
-        margin: EdgeInsets.only(left: 14),
-        decoration: ShapeDecoration(
-          shape: UnderlineInputBorder(
-              borderSide: BorderSide(
-                  color: isLastOne ? Colors.transparent : Color(0xFFDEDEDE),
-                  style: BorderStyle.solid)),
-        ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: <Widget>[
-            Container(
-              width: 20,
-              height: 20,
-              color: ThemeColors.color404040,
-              margin: EdgeInsets.only(right: 14),
-            ),
-            Expanded(
-                child: Container(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: <Widget>[
-                  Container(
-                    child: Text(
-                      title,
-                      style: TextStyle(
-                        color: ThemeColors.color404040,
-                        fontSize: 14,
-                        fontWeight: FontWeight.normal,
-                      ),
-                    ),
-                  ),
-                  Container(
-                    child: Text(
-                      '税号 9144010MA5AKYNN11',
-                      style: TextStyle(
-                        color: ThemeColors.colorA6A6A6,
-                        fontSize: 12,
-                        fontWeight: FontWeight.normal,
-                      ),
-                    ),
-                  ),
-                  Container(
-                    child: Text(
-                      '邮箱 tony@youshangzuo.com',
-                      style: TextStyle(
-                        color: ThemeColors.colorA6A6A6,
-                        fontSize: 12,
-                        fontWeight: FontWeight.normal,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            )),
-            Align(
-              alignment: Alignment.centerRight,
-              child: Container(
-                width: 48,
-                height: 24,
-                margin: EdgeInsets.only(right: 14),
-                child: FlatButton(
-                  padding: new EdgeInsets.fromLTRB(0.0, 0.0, 0.0, 0.0),
-                  child: Text("详情",
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: ThemeColors.color404040,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w400,
-                      )),
-                  onPressed: () {
-                    _toDetail();
-                  },
-                  textTheme: ButtonTextTheme.normal,
-                  textColor: ThemeColors.color404040,
-                  disabledTextColor: ThemeColors.color404040,
-                  color: Colors.transparent,
-                  disabledColor: Colors.transparent,
-                  highlightColor: Colors.transparent,
-                  // 按下的背景色
-                  splashColor: Colors.transparent,
-                  // 水波纹颜色
-                  colorBrightness: Brightness.light,
-                  // 主题
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.all(Radius.circular(12)),
-                      side: BorderSide(
-                          color: ThemeColors.colorA6A6A6,
-                          style: BorderStyle.solid,
-                          width: 1)),
-                  clipBehavior: Clip.antiAlias,
-                  materialTapTargetSize: MaterialTapTargetSize.padded,
-                ),
-              ),
-            )
-          ],
-        ),
-      ),
+  _normalWidget(InvoiceModel invoiceModel, bool isLastOne, bool isEnterprise) {
+    return InvoiceListItemWidget(
+      invoiceModel: invoiceModel,
+      isLastOne: isLastOne,
+      isChoosed: invoiceModel.id == currentId,
+      onPressed: () {
+        _toDetail(invoiceModel, isEnterprise);
+      },
+      onChooseEvent: () {
+        setState(() {
+          currentId = invoiceModel.id;
+        });
+        _selectInvoice(invoiceModel);
+      },
     );
   }
 
@@ -315,7 +264,7 @@ class _InvoiceListPageState extends State<InvoiceListPage>
             return _normalHeader();
           } else {
             return _normalWidget(
-                invoiceList[index - 1], index == invoiceList.length);
+                invoiceList[index - 1], index == invoiceList.length, false);
           }
         },
       );
@@ -330,7 +279,7 @@ class _InvoiceListPageState extends State<InvoiceListPage>
               return _enterpriseHeader();
             } else {
               return _normalWidget(enterpriseInvoiceList[index - 1],
-                  index == enterpriseInvoiceList.length);
+                  index == enterpriseInvoiceList.length, true);
             }
           },
         );
@@ -347,7 +296,7 @@ class _InvoiceListPageState extends State<InvoiceListPage>
                 return _openWidget();
               } else {
                 return _normalWidget(enterpriseInvoiceList[index - 1],
-                    index == enterpriseInvoiceList.length);
+                    index == enterpriseInvoiceList.length, true);
               }
             },
           );
@@ -362,7 +311,7 @@ class _InvoiceListPageState extends State<InvoiceListPage>
                 return _openWidget();
               } else {
                 return _normalWidget(enterpriseInvoiceList[index - 1],
-                    index == enterpriseMaxNumber);
+                    index == enterpriseMaxNumber, true);
               }
             },
           );
@@ -379,14 +328,15 @@ class _InvoiceListPageState extends State<InvoiceListPage>
               return _enterpriseHeader();
             } else if (index < enterpriseInvoiceList.length + 1) {
               return _normalWidget(enterpriseInvoiceList[index - 1],
-                  index == enterpriseInvoiceList.length);
+                  index == enterpriseInvoiceList.length, true);
             } else if (index == enterpriseInvoiceList.length + 1) {
               return _normalHeader();
             } else {
               return _normalWidget(
                   invoiceList[index - enterpriseInvoiceList.length - 2],
                   index ==
-                      enterpriseInvoiceList.length + 1 + invoiceList.length);
+                      enterpriseInvoiceList.length + 1 + invoiceList.length,
+                  false);
             }
           },
         );
@@ -402,7 +352,7 @@ class _InvoiceListPageState extends State<InvoiceListPage>
                 return _enterpriseHeader();
               } else if (index < enterpriseInvoiceList.length + 1) {
                 return _normalWidget(enterpriseInvoiceList[index - 1],
-                    index == enterpriseInvoiceList.length);
+                    index == enterpriseInvoiceList.length, true);
               } else if (index == enterpriseInvoiceList.length + 1) {
                 return _openWidget();
               } else if (index == enterpriseInvoiceList.length + 2) {
@@ -411,7 +361,8 @@ class _InvoiceListPageState extends State<InvoiceListPage>
                 return _normalWidget(
                     invoiceList[index - enterpriseInvoiceList.length - 3],
                     index ==
-                        enterpriseInvoiceList.length + 2 + invoiceList.length);
+                        enterpriseInvoiceList.length + 2 + invoiceList.length,
+                    false);
               }
             },
           );
@@ -424,7 +375,7 @@ class _InvoiceListPageState extends State<InvoiceListPage>
                 return _enterpriseHeader();
               } else if (index < enterpriseMaxNumber + 1) {
                 return _normalWidget(enterpriseInvoiceList[index - 1],
-                    index == enterpriseMaxNumber);
+                    index == enterpriseMaxNumber, true);
               } else if (index == enterpriseMaxNumber + 1) {
                 return _openWidget();
               } else if (index == enterpriseMaxNumber + 2) {
@@ -432,7 +383,8 @@ class _InvoiceListPageState extends State<InvoiceListPage>
               } else {
                 return _normalWidget(
                     invoiceList[index - enterpriseMaxNumber - 3],
-                    index == invoiceList.length + enterpriseMaxNumber + 2 + 1);
+                    index == invoiceList.length + enterpriseMaxNumber + 2 + 1,
+                    false);
               }
             },
           );
@@ -443,6 +395,12 @@ class _InvoiceListPageState extends State<InvoiceListPage>
 
   @override
   Widget build(BuildContext context) {
+    /*获取传递过来的参数*/
+    Map<String, dynamic> invoiceInfo =
+        ModalRoute.of(context).settings.arguments;
+    if (invoiceInfo != null) {
+      currentId = invoiceInfo["id"];
+    }
     return Scaffold(
       appBar: PreferredSize(
         child: Container(

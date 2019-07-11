@@ -140,7 +140,7 @@ class _RegisterPageState extends State<RegisterPage>
     debugPrint('企业注册...');
     dio.post(
       Api.ENTERPRISE_REGISTER,
-      queryParameters: {
+      data: {
         'company_name': _companyName,
         'manager': _manager,
         'phone': _phone,
@@ -204,7 +204,7 @@ class _RegisterPageState extends State<RegisterPage>
       debugPrint('企业注册...');
       dio.post(
         Api.ENTERPRISE_REGISTER,
-        queryParameters: {
+        data: {
           'company_name': _companyName,
           'manager': _manager,
           'phone': _phone,
@@ -241,6 +241,7 @@ class _RegisterPageState extends State<RegisterPage>
    * 返回首页
    **/
   _backHome() {
+    Application.getEventBus().fire(EventType.goHome);
     Navigator.of(context).popUntil(ModalRoute.withName(Page.ROOT_PAGE));
   }
 

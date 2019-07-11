@@ -1,3 +1,4 @@
+import 'package:app/constant.dart';
 import 'package:app/model/app_init_bean.dart';
 import 'package:app/model/custom_scroll_bean.dart';
 import 'package:app/model/home_link_picker_bean.dart';
@@ -5,6 +6,7 @@ import 'package:app/model/search_condition_bean.dart';
 import 'package:app/res/res_index.dart';
 import 'package:app/widget/widgets_index.dart';
 import 'package:flutter/material.dart';
+import 'package:app/model/search_condition_bean.dart' as SC;
 
 class HomeFilterUtils {
   static List<HomeLinkPickerBean> changeAreaDataToPickerData(
@@ -110,22 +112,57 @@ class HomeFilterUtils {
     return scrollBean;
   }
 
-  static changePriceOptionDataToScrollData(PriceOption priceOption) {
+  static changePriceOptionDataToScrollData(MoreOption priceOption) {
     List<CustomScrollBean> scrollBean = <CustomScrollBean>[];
     for (var i = 0; i < priceOption.items.length; i++) {
-      scrollBean.add(CustomScrollBean(
-          title: priceOption.items[i].text, hasBg: i == 0));
+      scrollBean.add(
+          CustomScrollBean(title: priceOption.items[i].text, hasBg: i == 0));
     }
     return scrollBean;
   }
 
-  static changeOpenCityDataToCityModelData(List<OpenCitys> openCitys) {
+  static changeOpenCityDataToCityModelData(
+      List<OpenCitys> openCitys, String currentCityName) {
     List<CityModel> scrollBean = <CityModel>[];
     for (var i = 0; i < openCitys.length; i++) {
       scrollBean.add(CityModel(
-          city: openCitys[i].regionName, hasBg: i == 0));
+          city: openCitys[i].regionName,
+          hasBg: openCitys[i].regionName == currentCityName));
     }
     return scrollBean;
+  }
+
+  static changeDataToMoreModelData(SC.Data data) {
+    List<String> moreFilters = data.moreFilter;
+    List<MoreModel> moreList = [];
+    for (String value in moreFilters) {
+      if (Constant.more_filter_devices == value) {
+        moreList.add(changeMoreOptionToMoreModel('devices', data.devices));
+      } else if (Constant.more_filter_distance_order == value) {
+        moreList.add(
+            changeMoreOptionToMoreModel('distance_order', data.distanceOrder));
+      } else if (Constant.more_filter_environment == value) {
+        moreList
+            .add(changeMoreOptionToMoreModel('environment', data.environment));
+      } else if (Constant.more_filter_room_type == value) {
+        moreList.add(changeMoreOptionToMoreModel('room_type', data.roomType));
+      } else if (Constant.more_filter_scene == value) {
+        moreList.add(changeMoreOptionToMoreModel('scene', data.scene));
+      }
+    }
+    return moreList;
+  }
+
+  static changeMoreOptionToMoreModel(String key, MoreOption option) {
+    return MoreModel(
+        key: key,
+        type: option?.name,
+        isSingleCheck: 0 == option.multiple,
+        gridData: option.items
+            .map((f) =>
+                GridDataListBean(title: f.text, value: f.value.toString()))
+            .toList(),
+        values: Set());
   }
 
   static double maxWidthWithPickerData(

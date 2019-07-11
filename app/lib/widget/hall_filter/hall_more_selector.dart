@@ -9,10 +9,16 @@ class HallMoreSelector extends StatefulWidget {
   //消失控制
   VoidCallback dismissAction;
 
+  //确定回调
+  VoidCallback sureCallback;
+
   //更多数据
   List<MoreModel> moreLists;
 
-  HallMoreSelector({this.moreLists, this.dismissAction});
+  HallMoreSelector(
+      {@required this.moreLists,
+      @required this.dismissAction,
+      @required this.sureCallback});
 
   @override
   State<StatefulWidget> createState() {
@@ -66,11 +72,11 @@ class HallMoreSelectorState extends State<HallMoreSelector> {
                             for (int i = 0, len = widget.moreLists.length;
                                 i < len;
                                 i++) {
+                              widget.moreLists[i].values?.clear();
                               for (GridDataListBean data
                                   in widget.moreLists[i].gridData) {
                                 data.hasBg = false;
                               }
-                              widget.moreLists[i].index = -1;
                             }
                           });
                         },
@@ -97,7 +103,10 @@ class HallMoreSelectorState extends State<HallMoreSelector> {
                       child: Material(
                         color: ThemeColors.color404040,
                         child: InkWell(
-                          onTap: widget.dismissAction,
+                          onTap: () {
+                            widget.sureCallback();
+                            widget.dismissAction();
+                          },
                           child: Container(
                             height: 44,
                             alignment: Alignment.center,
@@ -141,20 +150,18 @@ class HallMoreSelectorState extends State<HallMoreSelector> {
                   decoration: TextDecoration.none,
                 ),
               ),
-              widget.moreLists[index].showSingleCheck
-                  ? Positioned(
-                      bottom: 0,
-                      right: 0,
-                      child: Text(
-                        '单选',
-                        style: const TextStyle(
-                            fontWeight: FontWeight.normal,
-                            fontSize: 12,
-                            color: ThemeColors.colorA6A6A6,
-                            decoration: TextDecoration.none),
-                      ),
-                    )
-                  : SizedBox(width: 0, height: 0),
+              Positioned(
+                bottom: 0,
+                right: 0,
+                child: Text(
+                  widget.moreLists[index].isSingleCheck ? '单选' : '多选',
+                  style: const TextStyle(
+                      fontWeight: FontWeight.normal,
+                      fontSize: 12,
+                      color: ThemeColors.colorA6A6A6,
+                      decoration: TextDecoration.none),
+                ),
+              ),
             ],
           ),
         ),
@@ -195,10 +202,22 @@ class HallMoreSelectorState extends State<HallMoreSelector> {
       ),
       child: FlatButton(
         onPressed: () {
-          moreData.index = index;
           setState(() {
-            moreData.gridData.forEach((f) => f.hasBg = false);
+            //已经选中则移除条件
+            if (moreData.gridData[index].hasBg) {
+              moreData.gridData[index].hasBg = false;
+              moreData.values.remove(moreData.gridData[index].value);
+              return;
+            }
+
+            //如果是单选
+            if (moreData.isSingleCheck) {
+              moreData.values?.clear();
+              moreData.gridData.forEach((f) => f.hasBg = false);
+            }
             moreData.gridData[index].hasBg = true;
+            moreData.values ??= Set();
+            moreData.values.add(moreData.gridData[index].value);
           });
         },
         color: Colors.transparent,
@@ -229,45 +248,62 @@ class HallMoreSelectorState extends State<HallMoreSelector> {
 
 class MoreModel {
   String type;
-  bool showSingleCheck;
+  String key;
+  bool isSingleCheck;
+  Set<String> values = Set();
+
   List<GridDataListBean> gridData;
-  int index;
 
   MoreModel(
-      {this.type, this.showSingleCheck = true, this.gridData, this.index = -1});
+      {@required this.type,
+      @required this.key,
+      @required this.isSingleCheck,
+      @required this.gridData,
+      this.values});
 
   MoreModel.fromJson(Map<String, dynamic> json) {
     this.type = json['type'];
-    this.showSingleCheck = json['showSingleCheck'];
-    this.index = json['index'];
+    this.key = json['key'];
+    this.isSingleCheck = json['isSingleCheck'];
     this.gridData = (json['gridData'] as List) != null
         ? (json['gridData'] as List)
             .map((i) => GridDataListBean.fromJson(i))
             .toList()
         : null;
+
+    List<dynamic> valuesList = json['values'];
+    this.values = new Set();
+    this.values.addAll(valuesList.map((o) => o.toString()));
   }
 
   Map<String, dynamic> toJson() {
     final Map<String, dynamic> data = new Map<String, dynamic>();
     data['type'] = this.type;
-    data['showSingleCheck'] = this.showSingleCheck;
-    data['index'] = this.index;
+    data['key'] = this.key;
+    data['isSingleCheck'] = this.isSingleCheck;
     data['gridData'] = this.gridData != null
         ? this.gridData.map((i) => i.toJson()).toList()
         : null;
+    data['values'] = this.values;
     return data;
   }
 }
 
 class GridDataListBean {
   String title;
+  String value;
   bool hasBg;
   bool isShowMore;
 
-  GridDataListBean({this.title, this.hasBg = false, this.isShowMore = false});
+  GridDataListBean(
+      {@required this.title,
+      @required this.value,
+      this.hasBg = false,
+      this.isShowMore = false});
 
   GridDataListBean.fromJson(Map<String, dynamic> json) {
     this.title = json['title'];
+    this.value = json['value'];
     this.hasBg = json['hasBg'];
     this.isShowMore = json['isShowMore'];
   }
@@ -275,6 +311,7 @@ class GridDataListBean {
   Map<String, dynamic> toJson() {
     final Map<String, dynamic> data = new Map<String, dynamic>();
     data['title'] = this.title;
+    data['value'] = this.value;
     data['hasBg'] = this.hasBg;
     data['isShowMore'] = this.isShowMore;
     return data;

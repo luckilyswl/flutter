@@ -1,5 +1,4 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.qingshangzuo.app">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="com.qingshangzuo.app">
 
     <!-- io.flutter.app.FlutterApplication is an android.app.Application that
          calls FlutterMain.startInitialization(this); in its onCreate method.
@@ -11,46 +10,36 @@
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
 
-    
-    <application
-        android:name="io.flutter.app.FlutterApplication"
-        android:label="请上座"
-        android:icon="@mipmap/ic_launcher">
-        <activity
-            android:name=".MainActivity"
-            android:launchMode="singleTop"
-            android:theme="@style/LaunchTheme"
-            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
-            android:hardwareAccelerated="true"
-            android:windowSoftInputMode="adjustResize">
+
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.READ_PHONE_STATE" />
+    <uses-permission android:name="android.permission.CHANGE_WIFI_STATE" />
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+    <uses-permission android:name="android.permission.CHANGE_CONFIGURATION" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+
+
+    <application android:name="io.flutter.app.FlutterApplication" android:label="请上座" android:icon="@mipmap/ic_launcher">
+        <activity android:name=".MainActivity" android:launchMode="singleTop" android:theme="@style/LaunchTheme" android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode" android:hardwareAccelerated="true" android:windowSoftInputMode="adjustResize">
             <!-- This keeps the window background of the activity showing
                  until Flutter renders its first frame. It can be removed if
                  there is no splash screen (such as the default splash screen
                  defined in @style/LaunchTheme). -->
-            <meta-data
-                android:name="io.flutter.app.android.SplashScreenUntilFirstFrame"
-                android:value="true" />
+            <meta-data android:name="io.flutter.app.android.SplashScreenUntilFirstFrame" android:value="true" />
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
 
-        <activity
-            android:name=".wxapi.WXEntryActivity"
-            android:launchMode="singleTop"
-            android:theme="@style/DisablePreviewTheme" />
-        <activity
-            android:name=".wxapi.WXPayEntryActivity"
-            android:launchMode="singleTop"
-            android:theme="@style/DisablePreviewTheme" />
+        <meta-data android:name="com.amap.api.v2.apikey" android:value="e0f1dc875773e515422def2445870ad3" />
 
-        <activity-alias
-            android:name="${applicationId}.wxapi.WXEntryActivity"
-            android:exported="true"
-            android:launchMode="singleTop"
-            android:targetActivity="com.jarvan.fluwx.wxapi.WXEntryActivity"
-            android:theme="@style/DisablePreviewTheme">
+        <activity android:name=".wxapi.WXEntryActivity" android:launchMode="singleTop" android:theme="@style/DisablePreviewTheme" />
+        <activity android:name=".wxapi.WXPayEntryActivity" android:launchMode="singleTop" android:theme="@style/DisablePreviewTheme" />
+
+        <activity-alias android:name="${applicationId}.wxapi.WXEntryActivity" android:exported="true" android:launchMode="singleTop" android:targetActivity="com.jarvan.fluwx.wxapi.WXEntryActivity" android:theme="@style/DisablePreviewTheme">
 
 
             <intent-filter>
@@ -58,12 +47,7 @@
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </activity-alias>
-        <activity-alias
-            android:name="${applicationId}.wxapi.WXPayEntryActivity"
-            android:exported="true"
-            android:launchMode="singleTop"
-            android:targetActivity="com.jarvan.fluwx.wxapi.WXPayEntryActivity"
-            android:theme="@style/DisablePreviewTheme">
+        <activity-alias android:name="${applicationId}.wxapi.WXPayEntryActivity" android:exported="true" android:launchMode="singleTop" android:targetActivity="com.jarvan.fluwx.wxapi.WXPayEntryActivity" android:theme="@style/DisablePreviewTheme">
 
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />

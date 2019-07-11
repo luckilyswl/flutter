@@ -8,8 +8,10 @@ class DataUtils {
   static const String SP_USER_INFO = "user";
   static const String SP_INIT_INFO = "initInfo";
   static const String SP_CITY_ID = "cityId";
+  static const String SP_LONGITUDE = "longitude";
+  static const String SP_LATITUDE = "latitude";
 
-  // 保存登录信息
+  /// 保存登录信息
   static saveLoginInfo(UserInfoBean userInfoBean) {
     if (userInfoBean != null) {
       SpUtil.putBool(SP_IS_LOGIN, true);
@@ -18,14 +20,14 @@ class DataUtils {
     }
   }
 
-  // 清除登录信息
+  /// 清除登录信息
   static clearLoginInfo() {
     SpUtil.remove(SP_SESSION_ID);
     SpUtil.remove(SP_IS_LOGIN);
     SpUtil.remove(SP_USER_INFO);
   }
 
-  // 获取用户信息
+  /// 获取用户信息
   static UserInfoBean getUserInfo() {
     Map<String, dynamic> userInfo = SpUtil.getObject(SP_USER_INFO);
     if (userInfo == null) {
@@ -35,13 +37,13 @@ class DataUtils {
     return userInfoBean;
   }
 
-  // 是否登录
+  /// 是否登录
   static bool isLogin() {
     bool isLogin = SpUtil.getBool(SP_IS_LOGIN);
     return isLogin != null && isLogin;
   }
 
-  // 获取sessionId
+  /// 获取sessionId
   static String getSessionId() {
     String sessionId = SpUtil.getString(SP_SESSION_ID);
     if (sessionId == null) {
@@ -50,7 +52,7 @@ class DataUtils {
     return sessionId;
   }
 
-  // 获取用户信息
+  /// 获取用户信息
   static AppInit.Data getAppInitInfo() {
     Map<String, dynamic> initInfo = SpUtil.getObject(SP_INIT_INFO);
     if (initInfo == null) {
@@ -60,21 +62,41 @@ class DataUtils {
     return dataBean;
   }
 
-  // 保存初始化信息
+  /// 保存初始化信息
   static saveInitInfo(AppInit.Data dataBean) {
     if (dataBean != null) {
       SpUtil.putObject(SP_INIT_INFO, dataBean.toJson());
     }
   }
 
-  // 获取城市id
+  /// 获取城市id
   static int getCityId() {
     int cityId = SpUtil.getInt(SP_CITY_ID);
     return cityId;
   }
 
-  // 保存初始化信息
+  /// 保存初始化信息
   static saveCityId(int cityId) {
     SpUtil.putInt(SP_CITY_ID, cityId);
+  }
+
+  /// 保存经度
+  static saveLongitude(double longitude) {
+    SpUtil.putDouble(SP_LONGITUDE, longitude);
+  }
+
+  /// 保存纬度
+  static saveLatitude(double latitude) {
+    SpUtil.putDouble(SP_LATITUDE, latitude);
+  }
+
+  /// 获取经度
+  static double getLongitude() {
+    return SpUtil.getDouble(SP_LONGITUDE);
+  }
+
+  /// 获取纬度
+  static double getLatitude() {
+    return SpUtil.getDouble(SP_LATITUDE);
   }
 }

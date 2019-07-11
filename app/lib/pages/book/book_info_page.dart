@@ -2,19 +2,25 @@ import 'dart:convert';
 
 import 'package:app/api/api.dart';
 import 'package:app/http.dart';
+import 'package:app/model/book/book_info_bean.dart';
+import 'package:app/model/business_detail_bean.dart';
 import 'package:app/model/custom_scroll_bean.dart';
-import 'package:app/navigator/pop_route.dart';
+import 'package:app/model/invoice/invoice_list_bean.dart';
+import 'package:app/model/room_info_bean.dart';
 import 'package:app/navigator/page_route.dart';
+import 'package:app/navigator/pop_route.dart';
 import 'package:app/res/res_index.dart';
 import 'package:app/utils/utils_index.dart';
 import 'package:app/widget/dialog/book_application_dialog.dart';
 import 'package:app/widget/dialog/book_pay_info_dialog.dart';
 import 'package:app/widget/widgets_index.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:app/res/theme_colors.dart';
 import 'package:flutter/painting.dart';
 import 'package:flutter/rendering.dart';
-import 'package:app/model/search_condition_bean.dart' as SC;
+import 'package:app/widget/toast.dart' as T;
+import 'package:app/model/room_info_bean.dart' as Room;
 
 /*
  * 预定成功页面
@@ -26,75 +32,125 @@ class BookInfoPage extends StatefulWidget {
 
 class _BookInfoPageState extends State<BookInfoPage>
     with SingleTickerProviderStateMixin {
-  bool _needConfirm = true;
   bool _isOpen = false;
-  List<String> _payList;
   bool isMale = true;
-  bool needInvoice = true;
+  bool _buttonEnabled = false;
+
+  int goodsId; //请求数据用
+  String bookTime; //请求数据用
+
+  BookInfo bookInfo; //预定信息索引
+
+  InvoiceModel invoiceModel; //发票对象
+  String email; //邮箱
+  String showTime; //时间显示
+  String showGoodsInfo; //包房显示
+  String showNumber; //人数显示
 
   //包房数据
-  List<BookNowModel> modelList;
-
+  List<BookNowModel> modelList = List();
   //日期数据
-  List<CustomScrollBean> dateData = List();
-
+  List<CustomScrollBean> dateList = List();
   //时间数据
-  List<CustomScrollBean> timeData = List();
+  List<CustomScrollBean> timeList = List();
+  //人数数据
+  List<CustomScrollBean> numberList = List();
 
-  //位数数据
-  List<CustomScrollBean> bitData = List();
+  /// 包房详情
+  List<RoomModel> roomModelList = List();
+  //时间和人数
+  String timeAndNum = '请点击选择';
 
-  //搜索条件
-  SC.Data searchConditionData;
+  int _dateIndex = -1; //日期索引
+  int _timeIndex = -1; //时间索引  //选中的时间
+  int _numberIndex = -1; //人数索引
+  int _roomIndex = -1; //房间索引
+  int _businessId = 0; //商家Id
+
+  int _tempDateIndex = -1; //临时索引
+  int _tempTimeIndex = -1; //临时索引
+  int _tempNumberIndex = -1; //临时索引
+  int _tempRoomIndex = -1; //临时索引
+
+  BookNowPopupWindow popupWindow;
+
+  //填写信息
+  TextEditingController _nameEditController;
+  final FocusNode _nameFocusNode = FocusNode();
+  TextEditingController _phoneEditController;
+  final FocusNode _phoneFocusNode = FocusNode();
+  TextEditingController _remarkEditController;
+  final FocusNode _remarkFocusNode = FocusNode();
+
+  //预订信息
+  BookInfoData infoData;
 
   @override
   void initState() {
-    _payList = <String>["个人账户", "微信支付", "支付宝"];
+    _nameEditController = TextEditingController();
+    _nameEditController.addListener(() {
+      _checkButtonState();
+    });
 
-    modelList = [
-      BookNowModel(
-          imgUrl: 'assets/images/ic_default_qrcode.png',
-          title: '拿破仑房',
-          subtitle: '6-8人',
-          hasBg: true),
-      BookNowModel(
-          imgUrl: 'assets/images/ic_default_qrcode.png',
-          title: '路易十三房',
-          subtitle: '6-8人',
-          hasBg: false),
-      BookNowModel(
-          imgUrl: 'assets/images/ic_default_qrcode.png',
-          title: '亚历山大',
-          subtitle: '8-10人',
-          hasBg: false),
-      BookNowModel(
-          imgUrl: 'assets/images/ic_default_qrcode.png',
-          title: '拿破仑房',
-          subtitle: '6-8人',
-          hasBg: false),
-    ];
+    _phoneEditController = TextEditingController();
+    _phoneEditController.addListener(() {
+      _checkButtonState();
+    });
 
-    initData();
+    _remarkEditController = TextEditingController();
+    _remarkEditController.addListener(() {
+      if (_remarkEditController.text.length > 200) {
+        _remarkEditController.text =
+            _remarkEditController.text.substring(0, 199);
+      }
+    });
 
     super.initState();
   }
 
-  initData() {
-    ///搜索条件
-    dio.get(Api.SEARCH_CONDITIONS).then((data) {
-      var sources = jsonDecode(data.toString());
-      SC.SearchConditionBean bean = SC.SearchConditionBean.fromJson(sources);
-      SC.Data dataBean = bean.data;
+  _checkButtonState() {
+    if (_nameEditController.text.length > 0 &&
+        _phoneEditController.text.length == 11) {
+      setState(() {
+        _buttonEnabled = true;
+      });
+    } else {
+      setState(() {
+        _buttonEnabled = false;
+      });
+    }
+  }
 
+  initData() {
+    //预定信息
+    dio.get(Api.BOOK_INFO, queryParameters: {
+      "goods_id": goodsId.toString(),
+      "book_time": bookTime,
+      "num": bookInfo.numbers[_numberIndex].toString()
+    }).then((data) {
+      var sources = jsonDecode(data.toString());
+      BookInfoBean bean = BookInfoBean.fromJson(sources);
+      BookInfoData dataBean = bean.data;
       if (bean.errorCode == Api.SUCCESS_CODE) {
         setState(() {
-          searchConditionData = dataBean;
-          dateData = HomeFilterUtils.changeDateDataToScrollData(
-              searchConditionData.date);
-          timeData = HomeFilterUtils.changeTimeDataToScrollData(
-              searchConditionData.time);
-          bitData = HomeFilterUtils.changeNumberDataToScrollData(
-              searchConditionData.numbers);
+          infoData = dataBean;
+          if (infoData.enterprisePay == 1) {
+            _isOpen = true;
+          }
+          goodsId = infoData.goodsInfo.goodsId;
+          bookTime = infoData.goodsInfo.bookTime;
+          for (Room.Rooms room in bookInfo.rooms) {
+            if (room.goodsInfo.goodsId == goodsId) {
+              showGoodsInfo = '${room.roomName}（${room.numberDesc}）';
+            }
+          }
+          for (Date dateItem in bookInfo.date) {
+            if (dateItem.timestamp == bookInfo.date[_dateIndex].timestamp) {
+              // 今天 周三(6.12) 18:00
+              showTime =
+                  '${dateItem.title} ${dateItem.week} ${bookInfo.time[_timeIndex]}';
+            }
+          }
         });
       }
     });
@@ -106,23 +162,172 @@ class _BookInfoPageState extends State<BookInfoPage>
   }
 
   _payResult() {
-    Navigator.of(context).pushNamed(Page.BOOK_PAY_PAGE);
+    Map<String, dynamic> queryParameters = {};
+    queryParameters["goods_id"] = infoData.goodsInfo.goodsId.toString();
+    queryParameters["reserve_mobile"] = _phoneEditController.text;
+    queryParameters["reserve_name"] = _nameEditController.text;
+    queryParameters["book_time"] = infoData.goodsInfo.bookTime;
+    queryParameters["enterprise_pay"] = _isOpen ? "1" : "0";
+    queryParameters["gender"] = isMale ? "1" : "2";
+    queryParameters["num"] = infoData.goodsInfo.num.toString();
+
+    if (invoiceModel != null) {
+      queryParameters["use_invoice"] = "1";
+      queryParameters["tax_number"] = invoiceModel.taxNumber;
+      queryParameters["tax_title"] = invoiceModel.taxTitle;
+      queryParameters["tax_type"] = invoiceModel.invoiceType.toString();
+      queryParameters["tax_stuff_type"] = "1";
+      queryParameters["tax_email"] = email;
+    } else {
+      queryParameters["use_invoice"] = "0";
+    }
+    dio.get(Api.BOOK_ROOM, queryParameters: queryParameters).then((data) {
+      var sources = jsonDecode(data.data);
+      if (sources['error_code'] == Api.SUCCESS_CODE) {
+        if (sources['data']['pay_code'] != null &&
+            sources['data']['pay_code'] == '5100') {
+          Navigator.of(context).popAndPushNamed(Page.BOOK_RESULT_PAGE,
+              arguments: {"orderId": sources['data']['order_id']});
+        } else {
+          Navigator.of(context).popAndPushNamed(Page.BOOK_PAY_PAGE,
+              arguments: {"orderId": sources['data']['order_id']});
+        }
+      } else {
+        T.Toast.toast(context, sources['msg']);
+      }
+    });
   }
 
-  _issueInvoice() {
-    Navigator.of(context).pushNamed(Page.ISSUE_PAGE);
+  _issueInvoice() async {
+    if (invoiceModel != null) {
+      Map<String, dynamic> arguments = {"invoiceModel": invoiceModel};
+      if (email != null && email.length > 0) {
+        arguments["email"] = email;
+      }
+      final result = await Navigator.of(context)
+          .pushNamed(Page.ISSUE_PAGE, arguments: arguments);
+      if (result != null) {
+        Map<String, dynamic> returnArguments = result;
+        InvoiceModel returnInvoiceModel = returnArguments["invoiceModel"];
+        String returnEmail = returnArguments["email"];
+        setState(() {
+          invoiceModel = returnInvoiceModel;
+          email = returnEmail;
+        });
+      }
+    } else {
+      final result = await Navigator.of(context).pushNamed(Page.ISSUE_PAGE);
+      if (result != null) {
+        Map<String, dynamic> returnArguments = result;
+        InvoiceModel returnInvoiceModel = returnArguments["invoiceModel"];
+        String returnEmail = returnArguments["email"];
+        setState(() {
+          invoiceModel = returnInvoiceModel;
+          email = returnEmail;
+        });
+      }
+    }
+  }
+
+  /// 获取包房信息
+  _getAvailableRoomList(int dateIndex, int timeIndex, int numberIndex) {
+    if (dateIndex != -1 && dateIndex != -1 && dateIndex != -1) {
+      dio.get(Api.ROOM_URL, queryParameters: {
+        "business_id": _businessId.toString(),
+        "book_date": bookInfo.date[dateIndex].date +
+            " " +
+            bookInfo.time[timeIndex] +
+            ":00",
+        "num": bookInfo.numbers[numberIndex].toString()
+      }).then((data) {
+        setState(() {
+          var sources = jsonDecode(data.data);
+          RoomInfo info = RoomInfo.fromJson(sources);
+          bookInfo.rooms = info.data.rooms;
+          modelList.clear();
+          if (_roomIndex != -1 && bookInfo.rooms[_roomIndex].goodsInfo.available == 0) {
+            _roomIndex = -1;
+          }
+          bookInfo.rooms.forEach((f) {
+            BookNowModel model = new BookNowModel(
+                imgUrl: f.defaultImg,
+                title: f.roomName,
+                subtitle: f.numberDesc,
+                clickable: f.goodsInfo.available == 1,
+                tips: f.goodsInfo.tips,
+                desc: f.goodsInfo.desc,
+                hasBg: bookInfo.rooms.indexOf(f) == _roomIndex);
+            modelList.add(model);
+          });
+          popupWindow.state.updateAll();
+          _setRoomInfo();
+        });
+      });
+    }
   }
 
   _editInfo() {
+    if (popupWindow == null) {
+      popupWindow = BookNowPopupWindow(
+          modelList: modelList,
+          dateData: dateList,
+          timeData: timeList,
+          bitData: numberList,
+          roomModel: roomModelList,
+          timeAndNum: timeAndNum,
+          isBook: false,
+          timeSelectorCallback: (results) {
+            _tempDateIndex = results[0];
+            _tempTimeIndex = results[1];
+            _tempNumberIndex = results[2];
+            timeAndNum = '${dateList[_tempDateIndex].title} '
+                '${dateList[_tempDateIndex].subTitle} '
+                '${timeList[_tempTimeIndex].title}, '
+                '${numberList[_tempNumberIndex].title}';
+
+            /// 获取包房信息
+            _getAvailableRoomList(
+                _tempDateIndex, _tempTimeIndex, _tempNumberIndex);
+          },
+          roomIndexCallback: (index) {
+            print('$index');
+            setState(() {
+              _tempRoomIndex = index;
+              modelList.forEach((f) => f.hasBg = false);
+              if (-1 != index) {
+                modelList[index].hasBg = true;
+              }
+            });
+          },
+          dimissCallBack: () {},
+          sureCallBack: () {
+            if (_tempDateIndex != -1 &&
+                _tempTimeIndex != -1 &&
+                _tempNumberIndex != -1 &&
+                _tempRoomIndex != -1) {
+              _dateIndex = _tempDateIndex;
+              _timeIndex = _tempTimeIndex;
+              _numberIndex = _tempNumberIndex;
+            }
+            if (_tempRoomIndex != -1) {
+              _roomIndex = _tempRoomIndex;
+            }
+            debugPrint(
+                  '${_dateIndex.toString()}${_timeIndex.toString()}${_numberIndex.toString()}${_roomIndex.toString()}');
+              goodsId = _roomIndex != -1
+                  ? bookInfo.rooms[_roomIndex].goodsInfo.goodsId
+                  : -1;
+              bookTime = bookInfo.date[_dateIndex].date +
+                  " " +
+                  bookInfo.time[_timeIndex] +
+                  ":00";
+              initData();
+          },
+        );
+    }
     Navigator.of(context).push(
       PopRoute(
-        child: BookNowPopupWindow(
-          modelList: modelList,
-          dateData: dateData,
-          timeData: timeData,
-          bitData: bitData,
-          isBook: false,
-        ),
+        child: popupWindow,
         dimissable: true,
       ),
     );
@@ -194,7 +399,7 @@ class _BookInfoPageState extends State<BookInfoPage>
               ),
               alignment: Alignment.centerLeft,
               child: Text(
-                '花园酒店名仕阁',
+                infoData.goodsInfo.shopName,
                 style: TextStyle(
                   color: ThemeColors.color404040,
                   fontSize: 16,
@@ -212,9 +417,10 @@ class _BookInfoPageState extends State<BookInfoPage>
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: <Widget>[
-                            _bookInfoItemWidget('时间', '今天 周三(6.12) 18:00'),
-                            _bookInfoItemWidget('人数', '4位'),
-                            _bookInfoItemWidget('包房', '悠然明阁（6-8人房）'),
+                            _bookInfoItemWidget('时间', showTime),
+                            _bookInfoItemWidget(
+                                '人数', '${infoData.goodsInfo.num}位'),
+                            _bookInfoItemWidget('包房', '$showGoodsInfo'),
                           ],
                         ),
                       ),
@@ -573,7 +779,7 @@ class _BookInfoPageState extends State<BookInfoPage>
   }
 
   _getInvoiceWidget() {
-    if (needInvoice) {
+    if (invoiceModel != null) {
       return GestureDetector(
         onTap: () {
           _issueInvoice();
@@ -606,7 +812,7 @@ class _BookInfoPageState extends State<BookInfoPage>
                     children: <Widget>[
                       Container(
                         child: Text(
-                          '广州请上座信息科技有限公司',
+                          invoiceModel.taxTitle,
                           style: TextStyle(
                             color: ThemeColors.color404040,
                             fontSize: 14,
@@ -616,7 +822,9 @@ class _BookInfoPageState extends State<BookInfoPage>
                       ),
                       Container(
                         child: Text(
-                          '税号 9144010MA5AKYNN11',
+                          invoiceModel.invoiceType == 0
+                              ? '个人'
+                              : '税号 ${invoiceModel.taxNumber}',
                           style: TextStyle(
                             color: ThemeColors.colorA6A6A6,
                             fontSize: 12,
@@ -659,9 +867,17 @@ class _BookInfoPageState extends State<BookInfoPage>
               child: Align(
                 alignment: Alignment.centerRight,
                 child: Container(
-                  color: ThemeColors.color404040,
                   width: 51,
                   height: 28,
+                  child: CupertinoSwitch(
+                    activeColor: ThemeColors.colorF2C785,
+                    value: false,
+                    onChanged: (bool value) {
+                      setState(() {
+                        _issueInvoice();
+                      });
+                    },
+                  ),
                 ),
               ),
             )
@@ -707,14 +923,23 @@ class _BookInfoPageState extends State<BookInfoPage>
           Expanded(
             child: Align(
               alignment: Alignment.centerRight,
-              child: GestureDetector(
-                onTap: () {
-                  _showApplicationDialog();
-                },
-                child: Container(
-                  color: ThemeColors.color404040,
-                  width: 51,
-                  height: 28,
+              child: Container(
+                width: 51,
+                height: 28,
+                child: CupertinoSwitch(
+                  activeColor: ThemeColors.colorF2C785,
+                  value: _isOpen,
+                  onChanged: (bool value) {
+                    setState(() {
+                      if (infoData.enterprisePay == 3) {
+                        _showApplicationDialog();
+                      } else if (infoData.enterprisePay == 1) {
+                        setState(() {
+                          _isOpen = value;
+                        });
+                      }
+                    });
+                  },
                 ),
               ),
             ),
@@ -735,13 +960,15 @@ class _BookInfoPageState extends State<BookInfoPage>
             },
             onRightCloseEvent: () {
               Navigator.pop(context);
-              Toast.toast(context, '敬请期待');
+              T.Toast.toast(context, '敬请期待');
             },
           );
         });
   }
 
-  _service() {}
+  _service() {
+    Navigator.of(context).pushNamed(Page.CUSTOMER_SERVICE_PAGE);
+  }
 
   _subscriptionWidget() {
     return Container(
@@ -776,7 +1003,7 @@ class _BookInfoPageState extends State<BookInfoPage>
                             fontWeight: FontWeight.normal),
                         children: [
                           TextSpan(
-                            text: "100",
+                            text: infoData.goodsInfo.price.toString(),
                             style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.normal,
@@ -792,7 +1019,7 @@ class _BookInfoPageState extends State<BookInfoPage>
                         color: ThemeColors.colorFF97A3.withAlpha(51),
                       ),
                       child: Text(
-                        '消费/取消后原路退回',
+                        infoData.refundTips,
                         textAlign: TextAlign.center,
                         style: TextStyle(
                             color: ThemeColors.colorD0021B,
@@ -827,6 +1054,15 @@ class _BookInfoPageState extends State<BookInfoPage>
                     height: 21,
                   ),
                   onTap: () {
+                    String content = '';
+                    for (var i = 0; i < infoData.bookNotice.length; i++) {
+                      String subString = infoData.bookNotice[i];
+                      if (i == infoData.bookNotice.length - 1) {
+                        content = '$content${i + 1}. $subString';
+                      } else {
+                        content = '$content${i + 1}. $subString\n';
+                      }
+                    }
                     showDialog<Null>(
                         context: context, //BuildContext对象
                         barrierDismissible: false,
@@ -835,6 +1071,7 @@ class _BookInfoPageState extends State<BookInfoPage>
                             onCloseEvent: () {
                               Navigator.pop(context);
                             },
+                            content: content,
                           );
                         });
                   },
@@ -863,18 +1100,22 @@ class _BookInfoPageState extends State<BookInfoPage>
   }
 
   List<Widget> _getListWidgets() {
-    return <Widget>[
+    List<Widget> listWidgets = <Widget>[
       _bookInfoWidget(),
       _subscriptionWidget(),
       _dividerWidget(),
-      _nameWidget('预订人', '请填写到场用餐人姓氏', null, null),
-      _inputWidget('联系手机', '用于商家沟通联系', null, null),
-      _mutileInputWidget('备注', '如有其它要求，可在此留言', null, null),
+      _nameWidget('预订人', '请填写到场用餐人姓氏', _nameEditController, _nameFocusNode),
+      _inputWidget('联系手机', '用于商家沟通联系', _phoneEditController, _phoneFocusNode),
+      _mutileInputWidget(
+          '备注', '如有其它要求，可在此留言', _remarkEditController, _remarkFocusNode),
       _dividerWidget(),
       _getInvoiceWidget(),
       _dividerWidget(),
-      _enterpriseWidget()
     ];
+    if (infoData.enterprisePay == 1 || infoData.enterprisePay == 3) {
+      listWidgets.add(_enterpriseWidget());
+    }
+    return listWidgets;
   }
 
   _getListContent() {
@@ -887,8 +1128,114 @@ class _BookInfoPageState extends State<BookInfoPage>
     );
   }
 
+  /// 设置包房详情信息
+  _setRoomInfo() {
+    roomModelList.clear();
+    bookInfo.rooms.forEach((f) {
+      RoomModel bean = RoomModel();
+      bean.devices = f.devices;
+      bean.roomName = f.roomName;
+      bean.price = f.price.toString();
+      bean.numPeople = f.numberDesc;
+      bean.recommendPrice = f.shopMoney.toString();
+      bean.roomInfo = f.detail;
+      bean.isClickable = f.goodsInfo.available == 1;
+
+      /// 图片
+      List<ImgModel> list = new List();
+      if (f.imgList.length == 0) {
+        ImgModel imgModel = new ImgModel();
+        imgModel.imgUrl = f.defaultImg;
+        imgModel.id = 0;
+        list.add(imgModel);
+      } else {
+        for (int i = 0; i < f.imgList.length; i++) {
+          ImgModel imgModel = new ImgModel();
+          imgModel.imgUrl = f.imgList[i].src;
+          imgModel.id = i;
+          list.add(imgModel);
+        }
+      }
+      bean.imgUrls = list;
+      roomModelList.add(bean);
+    });
+    setState(() {});
+  }
+
   @override
   Widget build(BuildContext context) {
+    /*获取传递过来的参数*/
+    Map<String, dynamic> bookFliterInfo =
+        ModalRoute.of(context).settings.arguments;
+    if (infoData == null && bookFliterInfo != null) {
+      _dateIndex = bookFliterInfo["dateIndex"];
+      _timeIndex = bookFliterInfo["timeIndex"];
+      _numberIndex = bookFliterInfo["numberIndex"];
+      _roomIndex = bookFliterInfo["roomIndex"];
+      bookInfo = bookFliterInfo["bookInfo"];
+      _businessId = bookFliterInfo["businessId"];
+
+      goodsId = bookInfo.rooms[_roomIndex].goodsInfo.goodsId;
+      debugPrint(goodsId.toString());
+      bookTime = bookInfo.date[_dateIndex].date +
+          " " +
+          bookInfo.time[_timeIndex] +
+          ":00";
+
+      dateList.clear();
+      bookInfo.date.forEach((f) {
+        CustomScrollBean bean = new CustomScrollBean();
+        bean.title = f.title;
+        bean.subTitle = f.week;
+        if (bookInfo.date.indexOf(f) == _dateIndex) {
+          bean.hasBg = true;
+        } else {
+          bean.hasBg = false;
+        }
+        dateList.add(bean);
+      });
+
+      timeList.clear();
+      bookInfo.time.forEach((f) {
+        CustomScrollBean bean = new CustomScrollBean();
+        bean.title = f;
+        if (bookInfo.time.indexOf(f) == _timeIndex) {
+          bean.hasBg = true;
+        } else {
+          bean.hasBg = false;
+        }
+        timeList.add(bean);
+      });
+
+      List<CustomScrollBean> scrollBean = <CustomScrollBean>[];
+      for (var i = 0; i < bookInfo.numbers.length; i++) {
+        scrollBean.add(CustomScrollBean(
+            title: bookInfo.numbers[i] == 0 ? '未确定' : '${bookInfo.numbers[i]}位',
+            hasBg: i == _numberIndex));
+      }
+      numberList = scrollBean;
+
+      modelList.clear();
+      bookInfo.rooms.forEach((f) {
+        BookNowModel model = new BookNowModel(
+            imgUrl: f.defaultImg,
+            title: f.roomName,
+            subtitle: f.numberDesc,
+            clickable: f.goodsInfo.available == 1,
+            tips: f.goodsInfo.tips,
+            desc: f.goodsInfo.desc,
+            hasBg: bookInfo.rooms.indexOf(f) == _roomIndex);
+        modelList.add(model);
+      });
+      _setRoomInfo();
+
+      timeAndNum = '${dateList[_dateIndex].title} '
+          '${dateList[_dateIndex].subTitle} '
+          '${timeList[_timeIndex].title}, '
+          '${numberList[_numberIndex].title}';
+
+      initData();
+    }
     return Scaffold(
       appBar: PreferredSize(
         child: Container(
@@ -928,7 +1275,7 @@ class _BookInfoPageState extends State<BookInfoPage>
             child: Column(
               children: <Widget>[
                 Expanded(
-                  child: _getListContent(),
+                  child: infoData != null ? _getListContent() : Container(),
                 ),
                 Container(
                   color: Colors.white,
@@ -967,7 +1314,9 @@ class _BookInfoPageState extends State<BookInfoPage>
                                             ),
                                           ),
                                           TextSpan(
-                                            text: "￥100",
+                                            text: infoData != null
+                                                ? "￥${infoData.goodsInfo.price}"
+                                                : "￥0",
                                             style: TextStyle(
                                               fontSize: 12,
                                               fontWeight: FontWeight.normal,
@@ -986,7 +1335,9 @@ class _BookInfoPageState extends State<BookInfoPage>
                                             fontWeight: FontWeight.normal),
                                         children: [
                                           TextSpan(
-                                            text: "100",
+                                            text: infoData != null
+                                                ? "${infoData.goodsInfo.price}"
+                                                : "0",
                                             style: TextStyle(
                                               fontSize: 14,
                                               fontWeight: FontWeight.normal,
@@ -1002,17 +1353,23 @@ class _BookInfoPageState extends State<BookInfoPage>
                       ),
                       GestureDetector(
                         onTap: () {
-                          _payResult();
+                          if (_buttonEnabled) {
+                            _payResult();
+                          }
                         },
                         child: Container(
                           width: 145,
-                          color: ThemeColors.color404040, // 圆角度
+                          color: _buttonEnabled
+                              ? ThemeColors.color404040
+                              : ThemeColors.colorDEDEDE,
                           alignment: Alignment.center,
                           child: Text(
                             "提交订单",
                             textAlign: TextAlign.center,
                             style: TextStyle(
-                              color: Colors.white,
+                              color: _buttonEnabled
+                                  ? Colors.white
+                                  : ThemeColors.colorA6A6A6,
                               fontSize: 16,
                               fontWeight: FontWeight.w400,
                             ),

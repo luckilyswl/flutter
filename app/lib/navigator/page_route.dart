@@ -8,7 +8,16 @@ import 'package:app/pages/invoice/issue_invoice_page.dart';
 import 'package:app/pages/login/bind_page.dart';
 import 'package:app/pages/login/login_page.dart';
 import 'package:app/pages/login/register_page.dart';
-import 'package:app/pages/me/setting.dart';
+import 'package:app/pages/me/change_phone_page.dart';
+import 'package:app/pages/me/order/order_cancel_page.dart.dart';
+import 'package:app/pages/me/order/order_detail_page.dart';
+import 'package:app/pages/me/order/invitation_page.dart';
+import 'package:app/pages/me/order/order_list_page.dart';
+import 'package:app/pages/me/personal_info_page.dart';
+import 'package:app/pages/me/recharge/recharge_page.dart';
+import 'package:app/pages/me/recharge/recharge_pay_page.dart';
+import 'package:app/pages/me/recharge/recharge_result_page.dart';
+import 'package:app/pages/me/setting_page.dart';
 import 'package:app/pages/pay_bill/pay_bill_page.dart';
 import 'package:app/pages/pay_bill/pay_bill_result_page.dart';
 import 'package:flutter/material.dart';
@@ -24,6 +33,7 @@ class Page {
   static const String ROOT_PAGE = '/rootPage';
   static const String LOGIN_PAGE = '/login';
   static const String BIND_PAGE = '/bind';
+  static const String CUSTOMER_SERVICE_PAGE = '/servicePage';
   static const String REGISTER_PAGE = '/register';
   static const String SETTING_PAGE = '/setting';
   static const String SEARCH_PAGE = '/searchPage';
@@ -39,6 +49,23 @@ class Page {
   static const String BOOK_INFO_PAGE = '/bookInfoPage';
   static const String PAY_BILL_RESULT_PAGE = '/payBillResultPage';
   static const String PAY_BILL_PAGE = '/payBillPage';
+  static const String BALANCE_DETAIL_PAGE = '/balanceDetailPage';
+  static const String MY_COLLECT_PAGE = '/myCollectPage';
+  static const String RECHARGE_PAGE = '/rechargePage';
+  static const String RECHARGE_PAY_PAGE = '/rechargePayPage';
+  static const String RECHARGE_PAY_RESULT_PAGE = '/rechargePayResultPage';
+  static const String ORDER_LIST_PAGE = '/orderListPage';
+  static const String ORDER_DETAIL_PAGE = '/orderDetailPage';
+
+  static const String ORDER_CANCEL_PAGE = '/orderCancelPage';
+  static const String ACCOUNT_AND_SAFE_PAGE = '/accountAndSafePage';
+  static const String FEEDBACK_PAGE = '/feedbackPage';
+  static const String GUIDE_PAGE = '/guidePage';
+  static const String INVITATION_URL = '/invitation';
+  static const String PERSONAL_INFO = '/personalInfo';
+  static const String CHANGE_PWD_PAGE = '/changePwdPage';
+  static const String CHANGE_PHONE_PAGE = '/changePhone';
+  static const String BINDED_PHONE_PAGE = '/bindedPhone';
 
   static Map<String, WidgetBuilder> getRoutes() {
     var route = {
@@ -61,6 +88,23 @@ class Page {
       BOOK_INFO_PAGE: (context) => BookInfoPage(),
       PAY_BILL_RESULT_PAGE: (context) => PayBillResultPage(),
       PAY_BILL_PAGE: (context) => PayBillPage(),
+      CUSTOMER_SERVICE_PAGE: (context) => CustomerServicePage(),
+      BALANCE_DETAIL_PAGE: (context) => BalanceDetailPage(),
+      MY_COLLECT_PAGE: (context) => MyCollectPage(),
+      RECHARGE_PAGE: (context) => RechagrePage(),
+      RECHARGE_PAY_PAGE: (context) => RechargePayPage(),
+      RECHARGE_PAY_RESULT_PAGE: (context) => RechargePayResultPage(),
+      ORDER_LIST_PAGE: (context) => OrderListPage(),
+      ORDER_DETAIL_PAGE: (context) => OrderDetailPage(),
+      ORDER_CANCEL_PAGE: (context) => OrderCancelPage(),
+      ACCOUNT_AND_SAFE_PAGE: (context) => AccountAndSafePage(),
+      FEEDBACK_PAGE: (context) => FeedbackPage(),
+      GUIDE_PAGE: (context) => GuidePage(),
+      INVITATION_URL: (context) => InvitationPage(),
+      PERSONAL_INFO: (context) => PersonalInfoPage(),
+      CHANGE_PWD_PAGE: (context) => ChangePwdPage(),
+      CHANGE_PHONE_PAGE: (context) => ChangePhonePage(),
+      BINDED_PHONE_PAGE: (context) => BindedPhonePage(),
     };
 
     return route;

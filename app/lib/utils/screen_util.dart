@@ -7,8 +7,8 @@ import 'dart:ui' as ui show window;
  */
 
 ///默认设计稿尺寸（单位 dp or pt）
-double _designW = 360.0;
-double _designH = 640.0;
+double _designW = 375.0;
+double _designH = 667.0;
 double _designD = 3.0;
 
 /**

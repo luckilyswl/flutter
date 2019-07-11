@@ -1,3 +1,5 @@
+import 'package:app/res/res_index.dart';
+import 'package:app/utils/utils_index.dart';
 import 'package:flutter/material.dart';
 
 /*
@@ -20,23 +22,24 @@ class SaveImageToast {
     _showing = true;
     if (_overlayEntry == null) {
       _overlayEntry = OverlayEntry(
-          builder: (BuildContext context) => Positioned(
-                child: new Center(
-                  child: Container(
-                      alignment: Alignment.center,
-                      width: MediaQuery.of(context).size.width,
-                      child: Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 80.0),
-                        child: AnimatedOpacity(
-                          opacity: _showing ? 1.0 : 0.0, //目标透明度
-                          duration: _showing
-                              ? Duration(milliseconds: 100)
-                              : Duration(milliseconds: 400),
-                          child: _buildToastWidget(),
-                        ),
-                      )),
+        builder: (BuildContext context) => Center(
+              child: Container(
+                alignment: Alignment.center,
+                width: MediaQuery.of(context).size.width,
+                child: Padding(
+                  padding: EdgeInsets.symmetric(
+                      horizontal: ScreenUtil.getInstance().getAdapterSize(80)),
+                  child: AnimatedOpacity(
+                    opacity: _showing ? 1.0 : 0.0, //目标透明度
+                    duration: _showing
+                        ? Duration(milliseconds: 100)
+                        : Duration(milliseconds: 400),
+                    child: _buildToastWidget(),
+                  ),
                 ),
-              ));
+              ),
+            ),
+      );
       overlayState.insert(_overlayEntry);
     } else {
       // 重新绘制UI，类似setState
@@ -53,31 +56,30 @@ class SaveImageToast {
 
   // toast绘制
   static _buildToastWidget() {
-    return Center(
-        child: Container(
-            height: 110,
-            width: 110,
-            child: Card(
-              color: Color(0x80000000),
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(5)),
-              child: new Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: <Widget>[
-                  Image.asset(
-                    _isSuccess ? 'assets/images/ic_save_success.png'
-                        : 'assets/images/ic_save_failed.png',
-                    width: 45,
-                    height: 45,
-                  ),
-                  Text(
-                    _msg,
-                    style: new TextStyle(fontSize: 14, color: Colors.white),
-                  ),
-                ],
-              ),
-            )
-        )
+    return Container(
+      width: ScreenUtil.getInstance().getAdapterSize(110),
+      height: ScreenUtil.getInstance().getAdapterSize(110),
+      decoration: BoxDecoration(
+        borderRadius:
+            BorderRadius.circular(ScreenUtil.getInstance().getAdapterSize(5)),
+        color: Color(0x80000000),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: <Widget>[
+          Image.asset(
+            _isSuccess
+                ? 'assets/images/ic_save_success.png'
+                : 'assets/images/ic_save_failed.png',
+            width: ScreenUtil.getInstance().getAdapterSize(45),
+            height: ScreenUtil.getInstance().getAdapterSize(45),
+          ),
+          Text(
+            _msg,
+            style: FontStyles.style14FFFFFF,
+          ),
+        ],
+      ),
     );
   }
 }

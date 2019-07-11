@@ -5,11 +5,15 @@ import 'package:flutter/rendering.dart';
 class PayAlertDialog extends Dialog {
   final Function onLeftCloseEvent;
   final Function onRightCloseEvent;
+  final String name;
+  final String amout;
 
   PayAlertDialog(
       {Key key,
       @required this.onLeftCloseEvent,
-      @required this.onRightCloseEvent})
+      @required this.onRightCloseEvent,
+      @required this.name,
+      @required this.amout,})
       : super(key: key);
 
   @override
@@ -59,7 +63,7 @@ class PayAlertDialog extends Dialog {
                                 fontWeight: FontWeight.normal),
                             children: [
                               TextSpan(
-                                text: "100",
+                                text: amout,
                                 style: TextStyle(
                                   fontSize: 32,
                                   fontWeight: FontWeight.normal,
@@ -74,7 +78,7 @@ class PayAlertDialog extends Dialog {
                         alignment: Alignment.center,
                         margin: EdgeInsets.only(top: 5),
                         child: Text(
-                          '支付方式：个人账户',
+                          '支付方式：$name',
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             color: ThemeColors.colorA6A6A6,

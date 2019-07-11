@@ -31,7 +31,6 @@ dependencies:
   uuid: 2.0.1 #uuid
   shared_preferences: ^0.4.3  # 本地存储、收藏功能
   fluwx: ^0.6.3 #微信
-  #cached_network_image: ^0.8.0
   image_gallery_saver: ^1.1.0
   permission_handler: ^3.0.1
   image_saver: ^1.0.0
@@ -43,6 +42,9 @@ dependencies:
   flutter_html: ^0.10.4 #富文本内容显示
   tobias: ^1.0.0+1 #支付宝支付
   extended_image: ^0.5.1 # 图片预览，缩放
+  flutter_lifecycle_state: ^1.0.0  #  仿Android生命周期
+  pull_to_refresh: ^1.4.8  # 下拉刷新和上拉加载
+  amap_base: ^0.3.5  # 高德地图
 
   cached_network_image:
     git: https://github.com/openjmu/flutter_cached_network_image.git  # 0.8.0

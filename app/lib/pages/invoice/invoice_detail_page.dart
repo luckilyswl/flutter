@@ -1,8 +1,17 @@
+import 'dart:convert';
+
+import 'package:app/Application.dart';
+import 'package:app/api/api.dart';
+import 'package:app/http.dart';
+import 'package:app/model/event.dart';
+import 'package:app/model/invoice/invoice_list_bean.dart';
 import 'package:app/navigator/page_route.dart';
 import 'package:app/res/res_index.dart';
 import 'package:flutter/material.dart';
 import 'package:app/res/theme_colors.dart';
 import 'package:flutter/painting.dart';
+import 'package:app/widget/save_image_toast.dart' as Toast;
+import 'package:app/widget/toast.dart' as T;
 
 /*
  * 发票详情页面
@@ -15,21 +24,12 @@ class InvoiceDetailPage extends StatefulWidget {
 class _InvoiceDetailPageState extends State<InvoiceDetailPage>
     with SingleTickerProviderStateMixin {
   bool _canEdit;
-  List<Map<String, dynamic>> _titles;
+  List<Widget> _titleWidgets;
+  InvoiceModel invoiceModel;
 
   @override
   void initState() {
-    _canEdit = true;
-    _titles = <Map<String, dynamic>>[
-      {"title": "抬头类型", "subTitle": "单位"},
-      {"title": "名称", "subTitle": "深圳我不去餐饮连锁有限公司"},
-      {"title": "税号", "subTitle": "56WEFXC5894W2CQ"},
-      {"title": "单位地址", "subTitle": "深圳市福田区"},
-      {"title": "电话号码", "subTitle": "135 6512 3546"},
-      {"title": "开户银行", "subTitle": "深圳福田支行"},
-      {"title": "银行账户", "subTitle": "6228 4812 6824 8914 675"},
-      {"title": "邮箱", "subTitle": "wobuqu@qq.com"}
-    ];
+    _canEdit = false;
     super.initState();
   }
 
@@ -39,27 +39,42 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage>
   }
 
   _editInvoice() {
-    Navigator.of(context).pushNamed(Page.INVOICE_EDIT_PAGE);
-    debugPrint('编辑');
+    Navigator.of(context)
+        .pushNamed(Page.INVOICE_EDIT_PAGE, arguments: invoiceModel);
   }
 
   _deleteInvoice() {
-    debugPrint('删除抬头');
+     dio.post(Api.INVOICE_DELETE, data: {"invoice_id": invoiceModel.id.toString(),"is_delete": "1"}).then((data) {
+      var sources = jsonDecode(data.data);
+      if (sources['error_code'] == Api.SUCCESS_CODE) {
+        Toast.SaveImageToast.toast(context, "删除成功", true);
+        Future.delayed(
+          new Duration(milliseconds: 1000),
+          () {
+            Application.getEventBus().fire(EventType.changeInvoiceList);
+            Navigator.of(context).popUntil(ModalRoute.withName(Page.INVOICE_LIST_PAGE));
+          },
+        );
+      } else {
+        T.Toast.toast(context, sources['msg']);
+      }
+    });
   }
 
   _normalWidget(String title, String subTitle) {
     return Container(
-      height: 50,
+      constraints: BoxConstraints(minHeight: 50),
       color: Colors.white,
       child: Container(
         margin: EdgeInsets.only(left: 14),
+        padding: EdgeInsets.only(top: 14, bottom: 14),
         decoration: ShapeDecoration(
           shape: UnderlineInputBorder(
               borderSide: BorderSide(
                   color: Color(0xFFDEDEDE), style: BorderStyle.solid)),
         ),
         child: Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
             Container(
               width: 70,
@@ -72,16 +87,18 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage>
                 ),
               ),
             ),
-            Container(
-              child: Text(
-                subTitle,
-                style: TextStyle(
-                  color: ThemeColors.color404040,
-                  fontSize: 14,
-                  fontWeight: FontWeight.normal,
+            Expanded(
+              child: Container(
+                child: Text(
+                  subTitle,
+                  style: TextStyle(
+                    color: ThemeColors.color404040,
+                    fontSize: 14,
+                    fontWeight: FontWeight.normal,
+                  ),
                 ),
               ),
-            ),
+            )
           ],
         ),
       ),
@@ -92,45 +109,39 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage>
     return _canEdit
         ? Container(
             margin: EdgeInsets.only(top: 35, left: 14, right: 14),
-            child: Column(
-              children: <Widget>[
-                Container(
-                  height: 50,
-                  child: FlatButton(
-                    padding: new EdgeInsets.fromLTRB(0.0, 0.0, 0.0, 0.0),
-                    child: Container(
-                      alignment: Alignment.center,
-                      child: Text('编辑',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.normal,
-                          )),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(4.0),
-                        gradient: LinearGradient(
-                          begin: Alignment.centerRight,
-                          end: Alignment.centerLeft,
-                          colors: [Color(0xFF404040), Color(0xFF404040)],
-                        ),
-                      ),
-                    ),
-                    onPressed: (() {
-                      _editInvoice();
-                    }),
-                    textTheme: ButtonTextTheme.normal,
-                    disabledTextColor: ThemeColors.color404040,
-                    textColor: Colors.white,
-                    // 按下的背景��
-                    splashColor: Colors.transparent,
-                    // ��波纹颜色
-                    colorBrightness: Brightness.dark,
-                    // 主题
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(4)),
+            height: 50,
+            child: FlatButton(
+              padding: new EdgeInsets.fromLTRB(0.0, 0.0, 0.0, 0.0),
+              child: Container(
+                alignment: Alignment.center,
+                child: Text('编辑',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.normal,
+                    )),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(4.0),
+                  gradient: LinearGradient(
+                    begin: Alignment.centerRight,
+                    end: Alignment.centerLeft,
+                    colors: [Color(0xFF404040), Color(0xFF404040)],
                   ),
                 ),
-              ],
+              ),
+              onPressed: () {
+                _editInvoice();
+              },
+              textTheme: ButtonTextTheme.normal,
+              disabledTextColor: ThemeColors.color404040,
+              textColor: Colors.white,
+              // 按下的背景��
+              splashColor: Colors.transparent,
+              // ��波纹颜色
+              colorBrightness: Brightness.dark,
+              // 主题
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(4)),
             ),
           )
         : Container();
@@ -139,21 +150,47 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage>
   _getListContent() {
     return ListView.builder(
       padding: EdgeInsets.all(0),
-      itemCount: _titles.length + 1,
+      itemCount: _titleWidgets.length,
       itemBuilder: (BuildContext context, int index) {
-        if (index ==  _titles.length) {
-          return _buttonGroupWidget();
-        } else {
-          return _normalWidget(_titles[index]["title"],
-              _titles[index]["subTitle"]);
-        }
-        
+        return _titleWidgets[index];
       },
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    /*获取传递过来的参数*/
+    Map<String, dynamic> invoiceInfo =
+        ModalRoute.of(context).settings.arguments;
+    debugPrint(invoiceInfo.toString());
+    if (invoiceModel == null && invoiceInfo != null) {
+      _canEdit = !invoiceInfo["isEnterprise"];
+      invoiceModel = invoiceInfo["invoiceModel"];
+
+      _titleWidgets = <Widget>[];
+      if (invoiceModel.taxNumber.length > 0) {
+        _titleWidgets.addAll([
+          _normalWidget('抬头类型', '单位'),
+          _normalWidget('名称', invoiceModel.taxTitle),
+          _normalWidget('税号', invoiceModel.taxNumber),
+          _normalWidget('单位地址', invoiceModel.companyAddress),
+          _normalWidget('电话号码', invoiceModel.telphone),
+          _normalWidget('开户银行', invoiceModel.bankName),
+          _normalWidget('银行账户', invoiceModel.bankAccount),
+          _normalWidget('邮箱', invoiceModel.email),
+        ]);
+      } else {
+        _titleWidgets.addAll([
+          _normalWidget('抬头类型', '个人'),
+          _normalWidget('名称', invoiceModel.taxTitle),
+          _normalWidget('邮箱', invoiceModel.email),
+        ]);
+      }
+      if (_canEdit) {
+        _titleWidgets.add(_buttonGroupWidget());
+      }
+    }
+
     return Scaffold(
       appBar: PreferredSize(
         child: Container(

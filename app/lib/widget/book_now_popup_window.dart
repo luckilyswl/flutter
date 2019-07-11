@@ -11,6 +11,9 @@ class BookNowPopupWindow extends StatefulWidget {
   //包房数据
   List<BookNowModel> modelList;
 
+  //包房详情
+  List<RoomModel> roomModel = List();
+
   //日期数据
   List<CustomScrollBean> dateData = List();
 
@@ -19,6 +22,18 @@ class BookNowPopupWindow extends StatefulWidget {
 
   //位数数据
   List<CustomScrollBean> bitData = List();
+
+  //定义回调接口
+  Function(List<int> results) timeSelectorCallback;
+
+  //房间索引
+  Function(int index) roomIndexCallback;
+
+  VoidCallback bookCallBack;
+
+  VoidCallback dimissCallBack;
+
+  VoidCallback sureCallBack;
 
   //是否为预订弹窗
   bool isBook = true;
@@ -29,31 +44,50 @@ class BookNowPopupWindow extends StatefulWidget {
   //时间和人数
   String timeAndNum;
 
+  BookNowPopupWindowState state = BookNowPopupWindowState();
   BookNowPopupWindow(
       {@required this.modelList,
       @required this.dateData,
       @required this.timeData,
       @required this.bitData,
+      @required this.roomModel,
+      @required this.timeSelectorCallback,
+      @required this.roomIndexCallback,
       this.timeAndNum = '请点击选择',
-      this.isBook});
+      this.isBook,
+      this.bookCallBack,
+      this.dimissCallBack,
+      this.sureCallBack});
 
   @override
   State<StatefulWidget> createState() {
-    return BookNowPopupWindowState(timeAndNum: timeAndNum);
+    return state;
   }
 }
 
 class BookNowPopupWindowState extends State<BookNowPopupWindow> {
   String timeAndNum;
 
-  BookNowPopupWindowState({this.timeAndNum});
+  updateAll() {
+    setState(() {
+      
+    });
+  }
+  @override
+  void initState() {
+    super.initState();
+    timeAndNum = widget.timeAndNum;
+  }
 
   @override
   Widget build(BuildContext context) {
     return Stack(
       children: <Widget>[
         GestureDetector(
-          onTap: () => Navigator.of(context).pop(),
+          onTap: () {
+            Navigator.of(context).pop();
+            widget.dimissCallBack();
+          },
           child: Opacity(
             opacity: widget.isShowTimeSelector ? 0 : 1,
             child: Container(
@@ -94,7 +128,10 @@ class BookNowPopupWindowState extends State<BookNowPopupWindow> {
                           right: 14,
                           top: 14,
                           child: GestureDetector(
-                            onTap: () => Navigator.of(context).pop(),
+                            onTap: () {
+                              Navigator.of(context).pop();
+                              widget.dimissCallBack();
+                            },
                             child: Container(
                               width: 32,
                               height: 32,
@@ -120,14 +157,24 @@ class BookNowPopupWindowState extends State<BookNowPopupWindow> {
                               dateData: widget.dateData,
                               timeData: widget.timeData,
                               bitData: widget.bitData,
+                              roomModel: widget.roomModel,
+                              timeAndNum: timeAndNum,
                               callback: (isShowTimeSelector) {
                                 setState(() {
                                   widget.isShowTimeSelector =
                                       isShowTimeSelector;
                                 });
                               },
-                              timeSelectorCallback: (results) {},
-                              roomIndexCallback: (index) {},
+                              timeSelectorCallback: (results) {
+                                if (null != widget.timeSelectorCallback) {
+                                  widget.timeSelectorCallback(results);
+                                }
+                              },
+                              roomIndexCallback: (index) {
+                                if (null != widget.roomIndexCallback) {
+                                  widget.roomIndexCallback(index);
+                                }
+                              },
                             )
                           ],
                         ),
@@ -232,7 +279,6 @@ class BookNowPopupWindowState extends State<BookNowPopupWindow> {
                               borderRadius: BorderRadius.circular(4)),
                           onPressed: () {
                             _sure();
-                            Navigator.of(context).pop();
                           },
                           child: Text(
                             '确定',
@@ -254,8 +300,27 @@ class BookNowPopupWindowState extends State<BookNowPopupWindow> {
   }
 
   ///立即预订点击
-  _book() {}
+  _book() {
+    if (widget.bookCallBack != null) {
+      widget.bookCallBack();
+    }
+  }
 
   ///确定按钮
-  _sure() {}
+  _sure() {
+    bool hasBg = false;
+    widget.modelList.forEach((f) {
+      if (f.hasBg) {
+        hasBg = true;
+      }
+    });
+    if (hasBg) {
+      Navigator.of(context).pop();
+      if (widget.sureCallBack != null) {
+        widget.sureCallBack();
+      }
+    } else {
+      Toast.toast(context, '您未选择房间');
+    }
+  }
 }

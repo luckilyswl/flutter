@@ -26,7 +26,7 @@ class Pagination extends StatelessWidget {
     List<Widget> list = [];
     if (_photos.length > 0) {
       list.add(Banner.Banner(bannerStories, (story) {
-        Navigator.of(context).push(CupertinoPageRoute(builder: (_) {
+        Navigator.of(context).push(MaterialPageRoute(builder: (_) {
           return ImageViewer(bannerStories.indexOf(story), bannerStories);
         }));
       }));

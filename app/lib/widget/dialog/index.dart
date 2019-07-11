@@ -1,5 +1,11 @@
-export 'package:app/widget/dialog/captcha_dialog.dart';
-export 'package:app/widget/dialog/captcha_input_text.dart';
-export 'package:app/widget/dialog/force_upgrade_dialog.dart';
-export 'package:app/widget/dialog/home_link_picker.dart';
-export 'package:app/widget/dialog/pay_bill_list_dialog.dart';
+export 'captcha_dialog.dart';
+export 'captcha_input_text.dart';
+export 'force_upgrade_dialog.dart';
+export 'home_link_picker.dart';
+export 'pay_bill_list_dialog.dart';
+export 'loading_dialog.dart';
+export 'pay_alert_dialog.dart';
+export 'recharge_protocol_dialog.dart';
+export 'book_application_dialog.dart';
+export 'book_pay_info_dialog.dart';
+export 'common_dialog.dart';

@@ -123,16 +123,17 @@ class _LoginPageState extends State<LoginPage>
             setState(() {
               _code = "${data.code}";
             });
-            dio.post(Api.WECHAT_LOGIN, queryParameters: {
+            dio.post(Api.WECHAT_LOGIN, data: {
               "code": _code,
-            }).then((data) {
+            }).then(
+              (data) {
                 var sources = jsonDecode(data.data);
                 UserInfoBean bean = UserInfoBean.fromJson(sources);
                 if (bean.errorCode == Api.SUCCESS_CODE) {
                   if (bean.data.isBindPhone == "1") {
                     Future.delayed(
                       new Duration(milliseconds: 300),
-                          () {
+                      () {
                         DataUtils.saveLoginInfo(bean);
                         Application.getEventBus().fire(EventType.loginSuccess);
                         Navigator.pop(context);
@@ -311,7 +312,7 @@ class _LoginPageState extends State<LoginPage>
   _loginWithPhone() {
     dio.post(
       Api.TELPHONE_LOGIN,
-      queryParameters: {
+      data: {
         'phone': _phone,
         'code': _code,
       },
@@ -322,9 +323,9 @@ class _LoginPageState extends State<LoginPage>
         Future.delayed(
           new Duration(milliseconds: 300),
           () {
-            Application.getEventBus().fire(EventType.loginSuccess);
             DataUtils.saveLoginInfo(bean);
-            Navigator.pop(context);
+            Application.getEventBus().fire(EventType.loginSuccess);
+            Navigator.of(context).pop();
           },
         );
       } else {
@@ -380,7 +381,7 @@ class _LoginPageState extends State<LoginPage>
     debugPrint('登录...');
     dio.post(
       Api.USERNAME_LOGIN,
-      queryParameters: {
+      data: {
         'username': _account,
         'password': _accountPwd,
         'en_id': _enterprise
@@ -394,7 +395,7 @@ class _LoginPageState extends State<LoginPage>
           () {
             DataUtils.saveLoginInfo(bean);
             Application.getEventBus().fire(EventType.loginSuccess);
-            Navigator.pop(context);
+            Navigator.of(context).pop();
           },
         );
       } else {

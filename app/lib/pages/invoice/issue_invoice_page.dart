@@ -1,3 +1,4 @@
+import 'package:app/model/invoice/invoice_list_bean.dart';
 import 'package:app/navigator/page_route.dart';
 import 'package:app/res/res_index.dart';
 import 'package:flutter/material.dart';
@@ -16,9 +17,8 @@ class _IssueInvoicePageState extends State<IssueInvoicePage>
     with SingleTickerProviderStateMixin {
   bool _buttonEnable;
 
-  String _email = "ryan@7shangzuo.com";
-  String _title = "广州请上座信息科技有限公司";
-  String _subTitle = "税号 9144010MA5AKYNN11";
+  InvoiceModel invoiceModel;
+  String email;
 
   //填写信息
   TextEditingController _emailEditController;
@@ -26,12 +26,11 @@ class _IssueInvoicePageState extends State<IssueInvoicePage>
 
   @override
   void initState() {
-    _buttonEnable = true;
+    _buttonEnable = false;
     _emailEditController = TextEditingController();
-    _emailEditController.text = _email;
     _emailEditController.addListener(() {
       setState(() {
-        _email = _emailEditController.text;
+        email = _emailEditController.text;
       });
     });
     super.initState();
@@ -43,18 +42,51 @@ class _IssueInvoicePageState extends State<IssueInvoicePage>
     super.dispose();
   }
 
+  _checkButtonState() {
+    setState(() {
+      _buttonEnable = (invoiceModel != null && email != null && email.length > 0);
+    });
+  }
+
   _noNeed() {
-    debugPrint('NoNeed');
-    Navigator.of(context).pop();
+    Navigator.of(context).pop({"need": false});
   }
 
   _confirm() {
-    debugPrint('确定');
-    Navigator.of(context).pop();
+    Navigator.of(context).pop({"invoiceModel": invoiceModel, "email": email, "need": true});
   }
 
-  _toSelectInvoice() {
-    Navigator.of(context).pushNamed(Page.INVOICE_LIST_PAGE);
+  _toSelectInvoice() async {
+    if (invoiceModel != null) {
+      final result = await Navigator.of(context).pushNamed(
+          Page.INVOICE_LIST_PAGE,
+          arguments: {"id": invoiceModel.id});
+      if (result != null) {
+        InvoiceModel backInvoiceModel = result;
+        setState(() {
+          invoiceModel = backInvoiceModel;
+          if (email == null) {
+            email = invoiceModel.email;
+            _emailEditController.text = email;
+          }
+        });
+        _checkButtonState();
+      }
+    } else {
+      final result = await Navigator.of(context).pushNamed(
+          Page.INVOICE_LIST_PAGE);
+      if (result != null) {
+        InvoiceModel backInvoiceModel = result;
+        setState(() {
+          invoiceModel = backInvoiceModel;
+          if (email == null) {
+            email = invoiceModel.email;
+            _emailEditController.text = email;
+          }
+        });
+        _checkButtonState();
+      }
+    }
   }
 
   _normalWidget(String title, String subTitle) {
@@ -105,7 +137,7 @@ class _IssueInvoicePageState extends State<IssueInvoicePage>
         _toSelectInvoice();
       },
       child: Container(
-        height: _title.length > 0 ? 60 : 50,
+        height: invoiceModel != null ? 60 : 50,
         color: Colors.white,
         child: Container(
           margin: EdgeInsets.only(left: 14),
@@ -130,7 +162,7 @@ class _IssueInvoicePageState extends State<IssueInvoicePage>
                 ),
               ),
               Expanded(
-                  child: _title.length > 0
+                  child: invoiceModel != null
                       ? Container(
                           padding: EdgeInsets.only(top: 13),
                           child: Column(
@@ -138,7 +170,7 @@ class _IssueInvoicePageState extends State<IssueInvoicePage>
                             children: <Widget>[
                               Container(
                                 child: Text(
-                                  '广州请上座信息科技有限公司',
+                                  invoiceModel.taxTitle,
                                   style: TextStyle(
                                     color: ThemeColors.color404040,
                                     fontSize: 14,
@@ -148,7 +180,9 @@ class _IssueInvoicePageState extends State<IssueInvoicePage>
                               ),
                               Container(
                                 child: Text(
-                                  '税号 9144010MA5AKYNN11',
+                                  invoiceModel.invoiceType == 0
+                                      ? '个人'
+                                      : '税号 ${invoiceModel.taxNumber}',
                                   style: TextStyle(
                                     color: ThemeColors.colorA6A6A6,
                                     fontSize: 12,
@@ -261,11 +295,11 @@ class _IssueInvoicePageState extends State<IssueInvoicePage>
                   ),
                 ),
               ),
-              onPressed: (() {
+              onPressed: () {
                 if (_buttonEnable) {
                   _confirm();
                 }
-              }),
+              },
               textTheme: ButtonTextTheme.normal,
               disabledTextColor: ThemeColors.color404040,
               textColor: Colors.white,
@@ -312,6 +346,15 @@ class _IssueInvoicePageState extends State<IssueInvoicePage>
 
   @override
   Widget build(BuildContext context) {
+    /*获取传递过来的参数*/
+    Map<String, dynamic> invoiceInfo =
+        ModalRoute.of(context).settings.arguments;
+    if (invoiceModel == null && invoiceInfo != null) {
+      email = invoiceInfo["email"];
+      _emailEditController.text = email;
+      invoiceModel = invoiceInfo["invoiceModel"];
+      _checkButtonState();
+    }
     return Scaffold(
       appBar: PreferredSize(
         child: Container(

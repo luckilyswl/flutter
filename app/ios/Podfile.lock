@@ -1,4 +1,20 @@
 PODS:
+  - AMap3DMap (6.9.0):
+    - AMapFoundation (~> 1.5)
+  - amap_base (0.1.8):
+    - AMapLocation
+    - AMapNavi
+    - AMapSearch
+    - Flutter
+    - MJExtension
+  - AMapFoundation (1.5.7)
+  - AMapLocation (2.6.2):
+    - AMapFoundation (~> 1.4)
+  - AMapNavi (6.8.0):
+    - AMap3DMap (~> 6.7)
+    - AMapFoundation (~> 1.5)
+  - AMapSearch (6.9.0):
+    - AMapFoundation (~> 1.4)
   - Flutter (1.0.0)
   - fluwx (0.0.1):
     - Flutter
@@ -9,6 +25,7 @@ PODS:
     - Flutter
   - image_saver (0.0.1):
     - Flutter
+  - MJExtension (3.0.17)
   - OpenAliPaySDK (15.6.4)
   - package_info (0.0.1):
     - Flutter
@@ -28,6 +45,7 @@ PODS:
     - Flutter
 
 DEPENDENCIES:
+  - amap_base (from `.symlinks/plugins/amap_base/ios`)
   - Flutter (from `.symlinks/flutter/ios`)
   - fluwx (from `.symlinks/plugins/fluwx/ios`)
   - image_gallery_saver (from `.symlinks/plugins/image_gallery_saver/ios`)
@@ -42,10 +60,18 @@ DEPENDENCIES:
 
 SPEC REPOS:
   https://github.com/cocoapods/specs.git:
+    - AMap3DMap
+    - AMapFoundation
+    - AMapLocation
+    - AMapNavi
+    - AMapSearch
     - FMDB
+    - MJExtension
     - OpenAliPaySDK
 
 EXTERNAL SOURCES:
+  amap_base:
+    :path: ".symlinks/plugins/amap_base/ios"
   Flutter:
     :path: ".symlinks/flutter/ios"
   fluwx:
@@ -70,11 +96,18 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/url_launcher/ios"
 
 SPEC CHECKSUMS:
+  AMap3DMap: c80b264f08f179d9b0949b84c65fc1a51dec9d6f
+  amap_base: 0d205973fa29a6e232ffc4b48c1e3d8a7f20a3a3
+  AMapFoundation: 216d58448c80356434ac4332250a8fdb2f5c4d1e
+  AMapLocation: 89a7e4eb6040d32ba73c77a4966ecc66e46aa7c3
+  AMapNavi: 4cd0502d2b78ae8f760551c49e81a82934cfd61c
+  AMapSearch: af02822537e55b85a4752e9df5c19e4b9da82031
   Flutter: 58dd7d1b27887414a370fcccb9e645c08ffd7a6a
   fluwx: 19524c5e4c9c539a646407259139c9c1e4eaf9e5
   FMDB: 2ce00b547f966261cd18927a3ddb07cb6f3db82a
   image_gallery_saver: 1798f45aab0db52c4a2a161409c361340a19908e
   image_saver: 687f4ca28ae104255c78612b3420422791f2d2aa
+  MJExtension: 74ec83124a68891619fb7ba9c5c811bbf1691076
   OpenAliPaySDK: 6b4421139f6e8c6d7b6203c9857e34bf4b2b71ff
   package_info: 78cabb3c322943c55d39676f4a5bfc748c01d055
   path_provider: f96fff6166a8867510d2c25fdcc346327cc4b259

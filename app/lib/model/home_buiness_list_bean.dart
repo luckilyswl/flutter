@@ -26,17 +26,17 @@ class Data {
   String pageTitle;
   int pageNum;
   int pageSize;
-  List<Guess> guess;
+  List<BusinessList> guess;
   List<Banners> banners;
   List<BusinessList> list;
 
   Data(
       {this.pageTitle,
-        this.pageNum,
-        this.pageSize,
-        this.guess,
-        this.banners,
-        this.list});
+      this.pageNum,
+      this.pageSize,
+      this.guess,
+      this.banners,
+      this.list});
 
   Data.fromJson(Map<String, dynamic> json) {
     pageTitle = json['page_title'];
@@ -45,7 +45,7 @@ class Data {
     if (json['guess'] != null) {
       guess = new List();
       json['guess'].forEach((v) {
-        guess.add(new Guess.fromJson(v));
+        guess.add(new BusinessList.fromJson(v));
       });
     }
     if (json['banners'] != null) {
@@ -76,63 +76,6 @@ class Data {
     if (this.list != null) {
       data['list'] = this.list.map((v) => v.toJson()).toList();
     }
-    return data;
-  }
-}
-
-class Guess {
-  String id;
-  String shopName;
-  String address;
-  String longitude;
-  String latitude;
-  String imgUrl;
-  String title;
-  String perPerson;
-  String zoneName;
-  String attribute;
-  String distance;
-
-  Guess(
-      {this.id,
-        this.shopName,
-        this.address,
-        this.longitude,
-        this.latitude,
-        this.imgUrl,
-        this.title,
-        this.perPerson,
-        this.zoneName,
-        this.attribute,
-        this.distance});
-
-  Guess.fromJson(Map<String, dynamic> json) {
-    id = json['id'];
-    shopName = json['shop_name'];
-    address = json['address'];
-    longitude = json['longitude'];
-    latitude = json['latitude'];
-    imgUrl = json['img_url'];
-    title = json['title'];
-    perPerson = json['per_person'];
-    zoneName = json['zone_name'];
-    attribute = json['attribute'];
-    distance = json['distance'];
-  }
-
-  Map<String, dynamic> toJson() {
-    final Map<String, dynamic> data = new Map<String, dynamic>();
-    data['id'] = this.id;
-    data['shop_name'] = this.shopName;
-    data['address'] = this.address;
-    data['longitude'] = this.longitude;
-    data['latitude'] = this.latitude;
-    data['img_url'] = this.imgUrl;
-    data['title'] = this.title;
-    data['per_person'] = this.perPerson;
-    data['zone_name'] = this.zoneName;
-    data['attribute'] = this.attribute;
-    data['distance'] = this.distance;
     return data;
   }
 }
@@ -175,16 +118,16 @@ class BusinessList {
 
   BusinessList(
       {this.id,
-        this.shopName,
-        this.address,
-        this.longitude,
-        this.latitude,
-        this.imgUrl,
-        this.title,
-        this.perPerson,
-        this.zoneName,
-        this.attribute,
-        this.distance,
+      this.shopName,
+      this.address,
+      this.longitude,
+      this.latitude,
+      this.imgUrl,
+      this.title,
+      this.perPerson,
+      this.zoneName,
+      this.attribute,
+      this.distance,
       this.dishes});
 
   BusinessList.fromJson(Map<String, dynamic> json) {

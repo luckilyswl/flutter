@@ -28,6 +28,7 @@ class PayBillButton extends StatelessWidget {
         title,
         textAlign: TextAlign.center,
         style: TextStyle(
+          decoration: TextDecoration.none,
           color: enabled ? Colors.white : ThemeColors.colorA6A6A6,
           fontSize: 16,
           fontWeight: FontWeight.w400,
@@ -41,6 +42,7 @@ class PayBillButton extends StatelessWidget {
           subTitle,
           textAlign: TextAlign.center,
           style: TextStyle(
+            decoration: TextDecoration.none,
             color: enabled ? Colors.white : ThemeColors.colorA6A6A6,
             fontSize: 10,
             fontWeight: FontWeight.w400,
@@ -60,7 +62,7 @@ class PayBillButton extends StatelessWidget {
       },
       child: Container(
         width: 145,
-        color: enabled ? ThemeColors.color404040 : ThemeColors.colorDEDEDE,
+        color: enabled ? ThemeColors.color3F4688 : ThemeColors.colorDEDEDE,
         alignment: Alignment.center,
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,

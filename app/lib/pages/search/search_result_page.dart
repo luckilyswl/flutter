@@ -1,22 +1,56 @@
-import 'package:flutter/material.dart';
-import 'package:app/res/res_index.dart';
-import 'package:app/widget/widgets_index.dart';
-import 'package:app/utils/utils_index.dart';
-import 'package:app/model/custom_scroll_bean.dart';
-import 'package:app/model/home_link_picker_bean.dart';
 import 'dart:convert';
-import 'package:app/api/api.dart';
-import 'package:app/http.dart';
-import 'package:app/model/search_condition_bean.dart' as SC;
-import 'package:app/model/home_buiness_list_bean.dart' as BusinessInfo;
+
 import 'package:app/Application.dart';
+import 'package:app/api/api.dart';
+import 'package:app/constant.dart';
+import 'package:app/http.dart';
+import 'package:app/model/custom_scroll_bean.dart';
 import 'package:app/model/event.dart';
+import 'package:app/model/home_buiness_list_bean.dart' as BusinessInfo;
+import 'package:app/model/home_link_picker_bean.dart';
+import 'package:app/model/req_business_list_bean.dart';
+import 'package:app/model/search_condition_bean.dart' as SC;
 import 'package:app/pages/pages_index.dart';
+import 'package:app/res/res_index.dart';
+import 'package:app/utils/utils_index.dart';
+import 'package:app/widget/widgets_index.dart';
+import 'package:flutter/material.dart';
+import 'package:app/navigator/page_route.dart';
+import 'package:app/model/common_bean.dart';
+import 'package:pull_to_refresh/pull_to_refresh.dart';
 
 /*
  * 搜索结果页/宴会宴请 Page
  **/
 class SearchResultPage extends StatefulWidget {
+  //日期数据
+  List<CustomScrollBean> dateData;
+
+  //时间数据
+  List<CustomScrollBean> timeData;
+
+  //位数数据
+  List<CustomScrollBean> bitData;
+
+  //预算数据
+  List<CustomScrollBean> budgetData;
+
+  //更多数据
+  List<MoreModel> moreLists = [];
+
+  //区域和菜系index
+  int areaIndex = 0;
+  int dishIndex = 0;
+
+  SearchResultPage(
+      {this.dateData,
+      this.timeData,
+      this.bitData,
+      this.budgetData,
+      this.moreLists,
+      this.areaIndex,
+      this.dishIndex});
+
   @override
   State<StatefulWidget> createState() {
     return SearchResultPageState();
@@ -43,13 +77,10 @@ class SearchResultPageState extends State<SearchResultPage> {
   List<CustomScrollBean> budgetData;
 
   //更多数据
-  List<MoreModel> moreLists;
+  List<MoreModel> moreLists = [];
 
   //餐厅列表数据
   List<BusinessInfo.BusinessList> _businessList = List();
-
-  //猜你喜欢数据
-  List<BusinessInfo.BusinessList> likeList = List();
 
   //区域数据
   List<HomeLinkPickerBean> areaSelectorBeans;
@@ -68,14 +99,23 @@ class SearchResultPageState extends State<SearchResultPage> {
   //筛选条件
   SC.Data searchConditionData;
 
+  //商家列表接口请求bean
+  ReqBusinessListBean reqBusinessListBean;
+
   //餐厅筛选栏
   GlobalKey keyHallFilter = GlobalKey(debugLabel: 'search_result_hall');
 
   //文本控制器
   TextEditingController _textEditingController;
 
+  //刷新控制器
+  RefreshController _refreshController;
+
   //PopupWindow的类型
   int popupType = 0;
+
+  //当前加载的页数
+  int page = 1;
 
   //当前餐厅筛选栏PopupWindow是否显示
   bool isHallPopupShow = false;
@@ -83,62 +123,42 @@ class SearchResultPageState extends State<SearchResultPage> {
   //是否为商务宴请
   bool isBusinessDinner = false;
 
-  //是否为空数据
-  bool isEmpty = false;
+  //餐厅列表是否为空
+  bool isListEmpty = false;
+
+  //当前是否为猜你喜欢数据
+  bool isGuess = false;
 
   //餐厅筛选栏的高度
   double hallHeight = 0.0;
 
   //其他页面传递过来的搜索值
-  String value = '';
+  String value;
+
+  //输入框hint值
+  var hintText;
 
   @override
   void initState() {
     super.initState();
-    moreLists = [
-      MoreModel(type: '距离', showSingleCheck: false, gridData: [
-        GridDataListBean(title: '离我最近'),
-      ]),
-      MoreModel(type: '环境', gridData: [
-        GridDataListBean(title: '高档会所'),
-        GridDataListBean(title: '私房菜'),
-        GridDataListBean(title: '无敌江景'),
-        GridDataListBean(title: '星级酒店'),
-        GridDataListBean(title: '别墅'),
-        GridDataListBean(title: '更多', isShowMore: true),
-      ]),
-      MoreModel(type: '包房设施', gridData: [
-        GridDataListBean(title: '电视'),
-        GridDataListBean(title: '洗手间'),
-        GridDataListBean(title: '麻将桌'),
-        GridDataListBean(title: '茶桌'),
-        GridDataListBean(title: 'KTV设备'),
-        GridDataListBean(title: '投影'),
-      ]),
-      MoreModel(type: '包房设施', gridData: [
-        GridDataListBean(title: '电视'),
-        GridDataListBean(title: '洗手间'),
-        GridDataListBean(title: '麻将桌'),
-        GridDataListBean(title: '茶桌'),
-        GridDataListBean(title: 'KTV设备'),
-        GridDataListBean(title: '投影'),
-      ]),
-      MoreModel(type: '包房设施', gridData: [
-        GridDataListBean(title: '电视'),
-        GridDataListBean(title: '洗手间'),
-        GridDataListBean(title: '麻将桌'),
-        GridDataListBean(title: '茶桌'),
-        GridDataListBean(title: 'KTV设备'),
-        GridDataListBean(title: '投影'),
-      ]),
-    ];
-
     _textEditingController = TextEditingController();
+
+    _refreshController = RefreshController(initialRefresh: false);
+
+    _textEditingController.addListener(() {
+      setState(() {});
+    });
+
+    //从sp中获取推荐内容
+    hintText =
+        SpUtil.getString(Constant.sp_search_motion, defValue: '附近热门推荐：') +
+            SpUtil.getString(Constant.sp_search_tip, defValue: '至正小菜');
 
     _initHallFilterPopupWindow();
 
     _initData();
 
+    //组件渲染完成
     WidgetsBinding.instance.addPostFrameCallback((context) {
       RenderBox hallBox = keyHallFilter.currentContext.findRenderObject();
       setState(() {
@@ -148,13 +168,64 @@ class SearchResultPageState extends State<SearchResultPage> {
   }
 
   @override
+  void dispose() {
+    super.dispose();
+    _refreshController.dispose();
+  }
+
+  ///获取商家列表
+  _getBusinessList() {
+    reqBusinessListBean.keywords = _textEditingController.text;
+    dio
+        .get(Api.BUSINESS_LIST, queryParameters: reqBusinessListBean.toJson())
+        .then((data) {
+      var sources = jsonDecode(data.data);
+      BusinessInfo.HomeBusinessInfo businessInfo =
+          BusinessInfo.HomeBusinessInfo.fromJson(sources);
+      if (businessInfo != null && businessInfo.errorCode == Api.SUCCESS_CODE) {
+        isListEmpty = ObjectUtil.isEmptyList(businessInfo.data.list);
+        if ((isGuess && ObjectUtil.isEmptyList(businessInfo.data.guess)) ||
+            (!isGuess && isListEmpty)) {
+          _refreshController.loadNoData();
+        } else {
+          _refreshController.loadComplete();
+          reqBusinessListBean.page = '${++page}';
+        }
+
+        setState(() {
+          if (isListEmpty && 1 == page && !isGuess) {
+            isGuess = true;
+            _businessList.clear();
+            _businessList.add(null);
+            _businessList.add(null);
+            _businessList.addAll(businessInfo.data.guess);
+          } else if (isGuess) {
+            _businessList.addAll(businessInfo.data.guess);
+          } else {
+            isGuess = false;
+            _businessList.addAll(businessInfo.data.list);
+          }
+        });
+      } else {
+        if (_refreshController.isLoading) {
+          _refreshController.loadFailed();
+        }
+        Toast.toast(context, businessInfo.msg);
+      }
+    });
+    print('${reqBusinessListBean.toJson()}');
+  }
+
+  @override
   Widget build(BuildContext context) {
-    value = ModalRoute.of(context).settings.arguments;
-    if (null == value) {
-      value = '';
+    if (null == reqBusinessListBean) {
+      reqBusinessListBean = ModalRoute.of(context).settings.arguments;
+      reqBusinessListBean ??= ReqBusinessListBean();
+      reqBusinessListBean.page = '1';
+      //把传递过来的值设置到输入框上
+      _textEditingController.text = reqBusinessListBean.keywords;
+      _getBusinessList();
     }
-    //把传递过来的值设置到输入框上
-    _textEditingController.text = value;
 
     return Stack(
       children: <Widget>[
@@ -184,12 +255,12 @@ class SearchResultPageState extends State<SearchResultPage> {
                     GestureDetector(
                       onTap: () => Navigator.of(context).pop(),
                       child: Container(
-                        width: 20,
-                        height: 20,
                         color: Colors.transparent,
                         alignment: Alignment.centerLeft,
-                        child: Image.asset('assets/images/ic_message.png',
-                            width: 14, height: 14, fit: BoxFit.fill),
+                        child: Icon(
+                          Icons.arrow_back_ios,
+                          color: Colors.white,
+                        ),
                       ),
                     ),
                     SizedBox(width: 10),
@@ -206,15 +277,8 @@ class SearchResultPageState extends State<SearchResultPage> {
                                 children: <Widget>[
                                   SizedBox(width: 10),
                                   SizedBox(
-                                    width: 14,
-                                    height: 14,
                                     child: Center(
-                                      child: Image.asset(
-                                        'assets/images/ic_message.png',
-                                        width: 9,
-                                        height: 9,
-                                        fit: BoxFit.fill,
-                                      ),
+                                      child: Icon(Icons.search),
                                     ),
                                   ),
                                   SizedBox(width: 4),
@@ -225,7 +289,7 @@ class SearchResultPageState extends State<SearchResultPage> {
                                       padding: const EdgeInsets.only(right: 12),
                                       child: Material(
                                         color: Colors.transparent,
-                                        child: TextField(
+                                        child: TextFormField(
                                           controller: _textEditingController,
                                           style: const TextStyle(
                                               fontSize: 12,
@@ -234,10 +298,17 @@ class SearchResultPageState extends State<SearchResultPage> {
                                           keyboardType: TextInputType.text,
                                           textInputAction:
                                               TextInputAction.search,
+                                          onFieldSubmitted: (text) {
+                                            isGuess = false;
+                                            page = 1;
+                                            reqBusinessListBean.page = '1';
+                                            _businessList?.clear();
+                                            _getBusinessList();
+                                          },
                                           decoration: InputDecoration(
                                             contentPadding:
                                                 const EdgeInsets.only(top: 2),
-                                            hintText: '附近热门推荐：至正小菜',
+                                            hintText: hintText,
                                             border: InputBorder.none,
                                             hintStyle: const TextStyle(
                                                 decoration: TextDecoration.none,
@@ -249,19 +320,18 @@ class SearchResultPageState extends State<SearchResultPage> {
                                       ),
                                     ),
                                   ),
-                                  GestureDetector(
-                                    onTap: () => _textEditingController.clear(),
-                                    child: Container(
-                                      alignment: Alignment.center,
-                                      margin: const EdgeInsets.only(right: 10),
-                                      child: Image.asset(
-                                        'assets/images/ic_message.png',
-                                        width: 14,
-                                        height: 14,
-                                        fit: BoxFit.fill,
-                                      ),
-                                    ),
-                                  ),
+                                  0 == _textEditingController.text.length
+                                      ? SizedBox()
+                                      : GestureDetector(
+                                          onTap: () =>
+                                              _textEditingController.clear(),
+                                          child: Container(
+                                            alignment: Alignment.center,
+                                            margin: const EdgeInsets.only(
+                                                right: 10),
+                                            child: Icon(Icons.clear),
+                                          ),
+                                        ),
                                 ],
                               ),
                             )
@@ -338,139 +408,192 @@ class SearchResultPageState extends State<SearchResultPage> {
                           hallHeight -
                           50 -
                           MediaQuery.of(context).padding.top,
-                      child: ListView.separated(
-                        padding: const EdgeInsets.all(0),
-                        shrinkWrap: true,
-                        itemBuilder: (context, i) {
-                          ///显示没有找到符合的条件内容
-                          if (0 == i && isEmpty) {
-                            return Container(
-                              height: 196,
-                              width: ScreenUtil.getScreenW(context),
-                              color: Colors.white,
-                              alignment: Alignment.center,
-                              child: Column(
-                                children: <Widget>[
-                                  SizedBox(height: 40),
-                                  Container(
-                                    width: 60,
-                                    height: 60,
-                                    color: Colors.grey,
+                      child: SmartRefresher(
+                        controller: _refreshController,
+                        enablePullDown: false,
+                        enablePullUp: true,
+                        onLoading: _getBusinessList,
+                        footer: ClassicFooter(
+                          loadingText: '加载中...',
+                          noDataText: '没有更多数据',
+                          idleText: '上拉加载更多...',
+                          failedText: '加载失败!',
+                          textStyle: const TextStyle(
+                            fontSize: 14,
+                            color: ThemeColors.colorA6A6A6,
+                            fontWeight: FontWeight.normal,
+                            decoration: TextDecoration.none,
+                          ),
+                        ),
+                        child: SingleChildScrollView(
+                          physics: NeverScrollableScrollPhysics(),
+                          child: ListView.separated(
+                            physics: NeverScrollableScrollPhysics(),
+                            padding: const EdgeInsets.all(0),
+                            shrinkWrap: true,
+                            itemBuilder: (context, i) {
+                              ///显示没有找到符合的条件内容
+                              if (0 == i && isGuess) {
+                                return Container(
+                                  height: 196,
+                                  width: ScreenUtil.getScreenW(context),
+                                  color: Colors.white,
+                                  alignment: Alignment.center,
+                                  child: Column(
+                                    children: <Widget>[
+                                      SizedBox(height: 40),
+                                      Container(
+                                        width: 60,
+                                        height: 60,
+                                        color: Colors.grey,
+                                      ),
+                                      SizedBox(height: 14),
+                                      Text(
+                                        '“ 没找到符合的条件内容 ”',
+                                        style: const TextStyle(
+                                            fontSize: 14,
+                                            color: ThemeColors.colorA6A6A6,
+                                            fontWeight: FontWeight.normal,
+                                            decoration: TextDecoration.none),
+                                      ),
+                                      SizedBox(height: 20),
+                                      Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: <Widget>[
+                                          Container(
+                                            width: 80,
+                                            height: 28,
+                                            decoration: BoxDecoration(
+                                              borderRadius:
+                                                  BorderRadius.circular(14),
+                                              border: Border.all(
+                                                  color:
+                                                      ThemeColors.colorA6A6A6,
+                                                  width: 1),
+                                            ),
+                                            child: FlatButton(
+                                              onPressed: _postDemand,
+                                              padding: const EdgeInsets.all(0),
+                                              shape: RoundedRectangleBorder(
+                                                  borderRadius:
+                                                      BorderRadius.circular(
+                                                          14)),
+                                              child: Text(
+                                                '上报需求',
+                                                style: const TextStyle(
+                                                    fontSize: 12,
+                                                    color:
+                                                        ThemeColors.color404040,
+                                                    fontWeight:
+                                                        FontWeight.normal,
+                                                    decoration:
+                                                        TextDecoration.none),
+                                              ),
+                                            ),
+                                          ),
+                                          SizedBox(width: 14),
+                                          Container(
+                                            width: 80,
+                                            height: 28,
+                                            decoration: BoxDecoration(
+                                              borderRadius:
+                                                  BorderRadius.circular(14),
+                                              border: Border.all(
+                                                  color:
+                                                      ThemeColors.colorA6A6A6,
+                                                  width: 1),
+                                            ),
+                                            child: FlatButton(
+                                              onPressed: () {
+                                                Application.getEventBus()
+                                                    .fire(EventType.goServer);
+                                                Navigator.of(context).popUntil(
+                                                    ModalRoute.withName(
+                                                        Page.ROOT_PAGE));
+                                              },
+                                              padding: const EdgeInsets.all(0),
+                                              shape: RoundedRectangleBorder(
+                                                  borderRadius:
+                                                      BorderRadius.circular(
+                                                          14)),
+                                              child: Text(
+                                                '联系客服',
+                                                style: const TextStyle(
+                                                    fontSize: 12,
+                                                    color:
+                                                        ThemeColors.color404040,
+                                                    fontWeight:
+                                                        FontWeight.normal,
+                                                    decoration:
+                                                        TextDecoration.none),
+                                              ),
+                                            ),
+                                          )
+                                        ],
+                                      ),
+                                    ],
                                   ),
-                                  SizedBox(height: 14),
-                                  Text(
-                                    '“ 没找到符合的条件内容 ”',
+                                );
+                              }
+
+                              ///显示猜你喜欢行
+                              if (1 == i && isGuess) {
+                                return Container(
+                                  height: 34,
+                                  width: ScreenUtil.getScreenW(context),
+                                  color: ThemeColors.colorF2F2F2,
+                                  padding: const EdgeInsets.only(left: 16),
+                                  alignment: Alignment.centerLeft,
+                                  child: Text(
+                                    '猜你喜欢',
                                     style: const TextStyle(
                                         fontSize: 14,
-                                        color: ThemeColors.colorA6A6A6,
+                                        color: ThemeColors.color404040,
                                         fontWeight: FontWeight.normal,
                                         decoration: TextDecoration.none),
                                   ),
-                                  SizedBox(height: 20),
-                                  Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: <Widget>[
-                                      Container(
-                                        width: 80,
-                                        height: 28,
-                                        decoration: BoxDecoration(
-                                          borderRadius:
-                                              BorderRadius.circular(14),
-                                          border: Border.all(
-                                              color: ThemeColors.colorA6A6A6,
-                                              width: 1),
-                                        ),
-                                        child: FlatButton(
-                                          onPressed: () {},
-                                          padding: const EdgeInsets.all(0),
-                                          shape: RoundedRectangleBorder(
-                                              borderRadius:
-                                                  BorderRadius.circular(14)),
-                                          child: Text(
-                                            '上报需求',
-                                            style: const TextStyle(
-                                                fontSize: 12,
-                                                color: ThemeColors.color404040,
-                                                fontWeight: FontWeight.normal,
-                                                decoration:
-                                                    TextDecoration.none),
-                                          ),
-                                        ),
-                                      ),
-                                      SizedBox(width: 14),
-                                      Container(
-                                        width: 80,
-                                        height: 28,
-                                        decoration: BoxDecoration(
-                                          borderRadius:
-                                              BorderRadius.circular(14),
-                                          border: Border.all(
-                                              color: ThemeColors.colorA6A6A6,
-                                              width: 1),
-                                        ),
-                                        child: FlatButton(
-                                          onPressed: () {},
-                                          padding: const EdgeInsets.all(0),
-                                          shape: RoundedRectangleBorder(
-                                              borderRadius:
-                                                  BorderRadius.circular(14)),
-                                          child: Text(
-                                            '联系客服',
-                                            style: const TextStyle(
-                                                fontSize: 12,
-                                                color: ThemeColors.color404040,
-                                                fontWeight: FontWeight.normal,
-                                                decoration:
-                                                    TextDecoration.none),
-                                          ),
-                                        ),
-                                      )
-                                    ],
-                                  ),
-                                ],
-                              ),
-                            );
-                          }
+                                );
+                              }
 
-                          ///显示猜你喜欢行
-                          if (1 == i && isEmpty) {
-                            return Container(
-                              height: 34,
-                              width: ScreenUtil.getScreenW(context),
-                              color: ThemeColors.colorF2F2F2,
-                              padding: const EdgeInsets.only(left: 16),
-                              alignment: Alignment.centerLeft,
-                              child: Text(
-                                '猜你喜欢',
-                                style: const TextStyle(
-                                    fontSize: 14,
-                                    color: ThemeColors.color404040,
-                                    fontWeight: FontWeight.normal,
-                                    decoration: TextDecoration.none),
-                              ),
-                            );
-                          }
+                              return GestureDetector(
+                                  onTap: () {
+                                    Navigator.of(context)
+                                        .push(MaterialPageRoute(builder: (_) {
+                                      return BusinessDetailPage(
+                                          _businessList[i].id);
+                                    }));
+                                  },
+                                  child: Container(
+                                    color: Colors.white,
+                                    child: ItemHall(
+                                      imgUrl: _businessList[i]?.imgUrl,
+                                      title: _businessList[i]?.title,
+                                      price: '¥' +
+                                          _businessList[i]?.perPerson +
+                                          "/人",
+                                      location: _businessList[i]?.dishes +
+                                          ' | ' +
+                                          _businessList[i]?.zoneName +
+                                          " · " +
+                                          _businessList[i]?.distance,
+                                      remark: _businessList[i]?.shopName,
+                                    ),
+                                  ));
+                            },
+                            separatorBuilder: (context, i) {
+                              if (isListEmpty && (0 == i || 1 == i)) {
+                                return SizedBox();
+                              }
 
-                          return ItemHall(
-                            imgUrl: _businessList[i]?.imgUrl,
-                            title: _businessList[i]?.title,
-                            price: '￥' + _businessList[i]?.perPerson + "/人",
-                            location: _businessList[i].dishes +
-                                ' | ' +
-                                _businessList[i]?.zoneName +
-                                " · " +
-                                _businessList[i]?.distance,
-                            remark: _businessList[i]?.shopName,
-                          );
-                        },
-                        separatorBuilder: (context, i) {
-                          return Container(
-                            margin: const EdgeInsets.only(left: 144),
-                            height: 1,
-                            color: ThemeColors.colorDEDEDE,
-                          );
-                        },
-                        itemCount: _businessList.length,
+                              return Container(
+                                margin: const EdgeInsets.only(left: 144),
+                                height: 1,
+                                color: ThemeColors.colorDEDEDE,
+                              );
+                            },
+                            itemCount: _businessList?.length,
+                          ),
+                        ),
                       ),
                     ),
                   ],
@@ -493,6 +616,14 @@ class SearchResultPageState extends State<SearchResultPage> {
         firstData: dateData,
         secondData: timeData,
         callback: (results) {
+          reqBusinessListBean.bookTime =
+              '${searchConditionData.date[results[0]].date}' +
+                  ' ${timeData[1].title}';
+          isGuess = false;
+          _businessList?.clear();
+          page = 1;
+          reqBusinessListBean.page = '1';
+          _getBusinessList();
           _dismissHallFilterPopupWindow();
         },
       ),
@@ -500,6 +631,13 @@ class SearchResultPageState extends State<SearchResultPage> {
         title: '，几位？',
         firstData: bitData,
         callback: (results) {
+          reqBusinessListBean.numbers =
+              searchConditionData.numbers[results[0]].toString();
+          isGuess = false;
+          _businessList?.clear();
+          page = 1;
+          reqBusinessListBean.page = '1';
+          _getBusinessList();
           _dismissHallFilterPopupWindow();
         },
       ),
@@ -507,6 +645,14 @@ class SearchResultPageState extends State<SearchResultPage> {
         title: '，预算多少？',
         firstData: budgetData,
         callback: (results) {
+          reqBusinessListBean.priceOption = searchConditionData
+              .priceOption.items[results[0]].value
+              .toString();
+          isGuess = false;
+          _businessList?.clear();
+          page = 1;
+          reqBusinessListBean.page = '1';
+          _getBusinessList();
           _dismissHallFilterPopupWindow();
         },
         isBigMargin: true,
@@ -517,11 +663,29 @@ class SearchResultPageState extends State<SearchResultPage> {
           _dismissHallFilterPopupWindow();
         },
         onFinishEvent: (firstIndex, secondIndex) {
-          _dismissHallFilterPopupWindow();
           setState(() {
             areaIndex = firstIndex;
             areaSubIndex = secondIndex;
           });
+
+          //二级列表不能选择
+          if (0 == firstIndex) {
+            reqBusinessListBean.areaId = '';
+            reqBusinessListBean.circleId = '';
+          } else {
+            reqBusinessListBean.areaId =
+                areaSelectorBeans[firstIndex].id.toString();
+            reqBusinessListBean.circleId = areaSelectorBeans[firstIndex]
+                .subItems[secondIndex]
+                .id
+                .toString();
+          }
+          isGuess = false;
+          _businessList?.clear();
+          page = 1;
+          reqBusinessListBean.page = '1';
+          _getBusinessList();
+          _dismissHallFilterPopupWindow();
         },
         firstLevelIndex: areaIndex,
         secondLevelIndex: areaSubIndex,
@@ -533,11 +697,26 @@ class SearchResultPageState extends State<SearchResultPage> {
             _dismissHallFilterPopupWindow();
           },
           onFinishEvent: (firstIndex, secondIndex) {
-            _dismissHallFilterPopupWindow();
             setState(() {
               dishIndex = firstIndex;
               dishSubIndex = secondIndex;
             });
+
+            //二级列表不能选择
+            if (0 == firstIndex) {
+              reqBusinessListBean.dishes = '';
+            } else {
+              reqBusinessListBean.dishes = dishSelectorBeans[firstIndex]
+                  .subItems[secondIndex]
+                  .id
+                  .toString();
+            }
+            isGuess = false;
+            _businessList?.clear();
+            page = 1;
+            reqBusinessListBean.page = '1';
+            _getBusinessList();
+            _dismissHallFilterPopupWindow();
           },
           firstLevelIndex: dishIndex,
           secondLevelIndex: dishSubIndex,
@@ -545,6 +724,33 @@ class SearchResultPageState extends State<SearchResultPage> {
       hallMoreSelector: HallMoreSelector(
         moreLists: moreLists,
         dismissAction: _dismissHallFilterPopupWindow,
+        sureCallback: () {
+          String param = '';
+          moreLists.forEach((f) {
+            param = '';
+            f.values.forEach((a) => param += ',$a');
+            if (0 != f.values.length) {
+              param = param.substring(1, param.length);
+            }
+
+            if (Constant.more_filter_room_type == f.key) {
+              reqBusinessListBean.roomType = param;
+            } else if (Constant.more_filter_environment == f.key) {
+              reqBusinessListBean.environment = param;
+            } else if (Constant.more_filter_distance_order == f.key) {
+              reqBusinessListBean.distanceOrder = param;
+            } else if (Constant.more_filter_devices == f.key) {
+              reqBusinessListBean.devices = param;
+            } else if (Constant.more_filter_scene == f.key) {
+              reqBusinessListBean.scene = param;
+            }
+          });
+          isGuess = false;
+          _businessList?.clear();
+          page = 1;
+          reqBusinessListBean.page = '1';
+          _getBusinessList();
+        },
       ),
     );
 
@@ -602,41 +808,57 @@ class SearchResultPageState extends State<SearchResultPage> {
   }
 
   _initData() {
+    dateData = widget.dateData;
+    timeData = widget.timeData;
+    bitData = widget.bitData;
+    budgetData = widget.budgetData;
+    moreLists = widget.moreLists;
+    if (null != widget.areaIndex) {
+      areaIndex = widget.areaIndex;
+    }
+    if (null != widget.dishIndex) {
+      dishIndex = widget.dishIndex;
+    }
+
     ///请求筛选条件
     dio.get(Api.SEARCH_CONDITIONS).then((data) {
       var sources = jsonDecode(data.toString());
       SC.SearchConditionBean bean = SC.SearchConditionBean.fromJson(sources);
       SC.Data dataBean = bean.data;
 
-      if (bean.errorCode == "0") {
+      if (bean.errorCode == Api.SUCCESS_CODE) {
         setState(() {
           searchConditionData = dataBean;
           areaSelectorBeans = HomeFilterUtils.changeAreaDataToPickerData(
               searchConditionData.areas);
           dishSelectorBeans = HomeFilterUtils.changeDishDataToPickerData(
               searchConditionData.dishes);
-          dateData = HomeFilterUtils.changeDateDataToScrollData(
+          dateData ??= HomeFilterUtils.changeDateDataToScrollData(
               searchConditionData.date);
-          timeData = HomeFilterUtils.changeTimeDataToScrollData(
+          timeData ??= HomeFilterUtils.changeTimeDataToScrollData(
               searchConditionData.time);
-          bitData = HomeFilterUtils.changeNumberDataToScrollData(
+          bitData ??= HomeFilterUtils.changeNumberDataToScrollData(
               searchConditionData.numbers);
-          budgetData = HomeFilterUtils.changePriceOptionDataToScrollData(
+          budgetData ??= HomeFilterUtils.changePriceOptionDataToScrollData(
               searchConditionData.priceOption);
+          moreLists ??=
+              HomeFilterUtils.changeDataToMoreModelData(searchConditionData);
         });
       }
     });
+  }
 
-    ///请求餐厅列表数据
-    dio.get(Api.BUSINESS_LIST,
-        queryParameters: {"page": "1", "page_size": "20"}).then((data) {
-      var sources = jsonDecode(data.data);
-      BusinessInfo.HomeBusinessInfo businessInfo =
-          BusinessInfo.HomeBusinessInfo.fromJson(sources);
-      if (businessInfo != null && businessInfo.errorCode == "0") {
-        _businessList = businessInfo.data.list;
+  ///提交需求
+  _postDemand() {
+    dio.get(Api.SEARCH_COMMIT_DEMAND, queryParameters: {
+      "keywords": _textEditingController.text
+    }).then((data) {
+      var body = jsonDecode(data.toString());
+      CommonBean bean = CommonBean.fromJson(body);
+      if (Api.SUCCESS_CODE == bean.errorCode) {
+        Toast.toast(context, '上报成功，我们会尽快进行洽谈');
       } else {
-        Toast.toast(context, businessInfo.msg);
+        Toast.toast(context, bean?.msg);
       }
     });
   }

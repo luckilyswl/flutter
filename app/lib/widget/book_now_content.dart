@@ -22,7 +22,7 @@ class BookNowContent extends StatefulWidget {
   List<CustomScrollBean> bitData = List();
 
   //包房详情model
-  RoomModel roomModel = RoomModel();
+  List<RoomModel> roomModel = List();
 
   //时间选择器
   OverlayEntry overlayTimeSelector;
@@ -33,7 +33,7 @@ class BookNowContent extends StatefulWidget {
   //定义回调接口
   Function(List<int> results) timeSelectorCallback;
 
-  //房间索引
+  //选中的包房item索引
   Function(int index) roomIndexCallback;
 
   //包房时间区间
@@ -45,12 +45,22 @@ class BookNowContent extends StatefulWidget {
   //时间和人数
   String timeAndNum;
 
+  BookNowContentState bookNowContentState = BookNowContentState();
+
+  set setTimeAndNum(String t) {
+    this.timeAndNum = t;
+    bookNowContentState.update();
+  }
+
+  set setModelList(List<BookNowModel> list) {}
+
   BookNowContent(
       {@required this.timeInterval = '',
       @required this.modelList,
       @required this.dateData,
       @required this.timeData,
       @required this.bitData,
+      @required this.roomModel,
       @required this.callback,
       this.timeAndNum = '请点击选择',
       this.timeSelectorCallback,
@@ -58,7 +68,7 @@ class BookNowContent extends StatefulWidget {
 
   @override
   State<StatefulWidget> createState() {
-    return BookNowContentState(timeAndNum: timeAndNum);
+    return bookNowContentState;
   }
 }
 
@@ -66,34 +76,20 @@ class BookNowContentState extends State<BookNowContent> {
   //时间和人数
   String timeAndNum = '请点击选择';
 
-  BookNowContentState({this.timeAndNum});
+  void update() {
+    setState(() {
+      timeAndNum = widget.timeAndNum;
+    });
+  }
+
+  void updateAll() {
+    setState(() {});
+  }
 
   @override
   void initState() {
     super.initState();
-    widget.roomModel.devices = [
-      DevicesListBean(img: 'assets/images/ic_wifi.png', value: '无线上网'),
-      DevicesListBean(img: 'assets/images/ic_wifi.png', value: '空调'),
-      DevicesListBean(img: 'assets/images/ic_wifi.png', value: '洗手间'),
-      DevicesListBean(img: 'assets/images/ic_wifi.png', value: '茶桌'),
-      DevicesListBean(img: 'assets/images/ic_wifi.png', value: '电视'),
-      DevicesListBean(img: 'assets/images/ic_wifi.png', value: '投影'),
-      DevicesListBean(img: 'assets/images/ic_wifi.png', value: '麻将台'),
-      DevicesListBean(img: 'assets/images/ic_wifi.png', value: 'KTV设备'),
-      DevicesListBean(img: 'assets/images/ic_wifi.png', value: '窗边景观'),
-      DevicesListBean(img: 'assets/images/ic_wifi.png', value: '吧台'),
-    ];
-    widget.roomModel.roomInfo =
-        '普通收费标准：128元/小时，一道茶258元起，配有茶艺师冲泡服务。 会务收费标准： 1、包房3小时，标准价1399元，提供茶水+茶点8份+水果盘4份； 2、配有茶艺师在旁加茶，超时按258元/小时收取； 3、白天时段可以享受折扣。 3、白天时段可以享受折扣。';
-    widget.roomModel.roomName = '拿破仑房';
-    widget.roomModel.numPeople = '6-8人';
-    widget.roomModel.price = 50;
-    widget.roomModel.recommendPrice = 3000;
-    widget.roomModel.imgUrls = [
-      ImgModel(id: 0, imgUrl: 'assets/images/ic_food.png'),
-      ImgModel(id: 1, imgUrl: 'assets/images/ic_food.png'),
-      ImgModel(id: 2, imgUrl: 'assets/images/ic_food.png'),
-    ];
+    timeAndNum = widget.timeAndNum;
   }
 
   @override
@@ -107,22 +103,7 @@ class BookNowContentState extends State<BookNowContent> {
         Row(
           children: <Widget>[
             SizedBox(width: 14),
-            Container(
-              width: 14,
-              height: 14,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(1),
-                  gradient: Gradients.goldDarkLinearGradient),
-              child: Text(
-                '1',
-                style: const TextStyle(
-                    fontSize: 12,
-                    color: Colors.white,
-                    fontWeight: FontWeight.w400,
-                    decoration: TextDecoration.none),
-              ),
-            ),
+            Image.asset('assets/images/ic_blue_1.png', width: 14, height: 14),
             SizedBox(width: 10),
             Text(
               '什么时间，几位就餐',
@@ -147,7 +128,7 @@ class BookNowContentState extends State<BookNowContent> {
                   blurRadius: 8,
                   spreadRadius: 0),
             ],
-            gradient: Gradients.blackLinearGradient,
+            gradient: Gradients.blueLinearGradient,
           ),
           child: FlatButton(
             onPressed: _clickTimeSelector,
@@ -185,22 +166,7 @@ class BookNowContentState extends State<BookNowContent> {
         Row(
           children: <Widget>[
             SizedBox(width: 14),
-            Container(
-              width: 14,
-              height: 14,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(1),
-                  gradient: Gradients.goldDarkLinearGradient),
-              child: Text(
-                '2',
-                style: const TextStyle(
-                    fontSize: 12,
-                    color: Colors.white,
-                    fontWeight: FontWeight.w400,
-                    decoration: TextDecoration.none),
-              ),
-            ),
+            Image.asset('assets/images/ic_blue_2.png', width: 14, height: 14),
             SizedBox(width: 10),
             Text(
               '哪个包房',
@@ -261,7 +227,7 @@ class BookNowContentState extends State<BookNowContent> {
               border: Border.all(
                   width: 1,
                   color: model.hasBg
-                      ? ThemeColors.color404040
+                      ? ThemeColors.color54548C
                       : ThemeColors.colorDEDEDE),
             ),
             child: Stack(
@@ -286,106 +252,111 @@ class BookNowContentState extends State<BookNowContent> {
                                 fit: BoxFit.cover)),
                       ),
                     ),
-                    Container(
-                      width: 150,
-                      height: 44,
-                      child: Stack(
-                        alignment: Alignment.centerLeft,
-                        children: <Widget>[
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: <Widget>[
-                              Container(
-                                margin: const EdgeInsets.only(left: 10),
-                                child: Text(
-                                  model.title,
-                                  style: const TextStyle(
-                                      fontSize: 14,
-                                      color: ThemeColors.color404040,
-                                      decoration: TextDecoration.none,
-                                      fontWeight: FontWeight.normal),
-                                ),
-                              ),
-                              Container(
-                                margin: const EdgeInsets.only(left: 10),
-                                child: Text(
-                                  model.subtitle,
-                                  style: const TextStyle(
-                                      fontSize: 10,
-                                      color: ThemeColors.color404040,
-                                      decoration: TextDecoration.none,
-                                      fontWeight: FontWeight.normal),
-                                ),
-                              )
-                            ],
-                          ),
-                        ],
-                      ),
-                    )
-                  ],
-                ),
-                model.clickable
-                    ? Positioned(
-                        right: 0,
-                        bottom: 0,
-                        child: GestureDetector(
-                          onTap: () {
-                            ///已经选中,点击则不选中
-                            if (widget.modelList[index].hasBg) {
-                              widget.selectIndex = -1;
-                              if (null != widget.roomIndexCallback) {
-                                widget.roomIndexCallback(-1);
-                              }
-                              setState(() {
-                                widget.modelList[index].hasBg = false;
-                              });
-                              return;
-                            }
-
-                            widget.selectIndex = index;
+                    GestureDetector(
+                      onTap: () {
+                        if (widget.modelList[index].clickable) {
+                          ///已经选中,点击则不选中
+                          if (widget.modelList[index].hasBg) {
+                            widget.selectIndex = -1;
                             if (null != widget.roomIndexCallback) {
-                              widget.roomIndexCallback(index);
+                              widget.roomIndexCallback(-1);
                             }
                             setState(() {
-                              widget.modelList.forEach((f) => f.hasBg = false);
-                              widget.modelList[index].hasBg = true;
+                              widget.modelList[index].hasBg = false;
                             });
-                          },
-                          child: Container(
-                            width: 31,
-                            height: 31,
-                            alignment: Alignment.bottomRight,
-                            decoration: model.hasBg
-                                ? BoxDecoration(
-                                    borderRadius: BorderRadius.only(
-                                        topLeft: Radius.circular(200),
-                                        bottomRight: Radius.circular(4)),
-                                    gradient: Gradients.blackLinearGradient,
-                                  )
-                                : BoxDecoration(
-                                    borderRadius: BorderRadius.only(
-                                        topLeft: Radius.circular(200),
-                                        bottomRight: Radius.circular(4)),
-                                    color: ThemeColors.colorDEDEDE),
-                            child: Container(
-                              width: 16,
-                              height: 16,
-                              margin:
-                                  const EdgeInsets.only(right: 4, bottom: 4),
-                              child:
-                                  Image.asset('assets/images/ic_success.png'),
+                            return;
+                          }
+
+                          widget.selectIndex = index;
+                          if (null != widget.roomIndexCallback) {
+                            widget.roomIndexCallback(index);
+                          }
+                          setState(() {
+                            widget.modelList.forEach((f) => f.hasBg = false);
+                            widget.modelList[index].hasBg = true;
+                          });
+                        }
+                      },
+                      child: Container(
+                        width: 150,
+                        height: 44,
+                        color: Colors.transparent,
+                        child: Stack(
+                          alignment: Alignment.centerLeft,
+                          children: <Widget>[
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: <Widget>[
+                                Container(
+                                  margin: const EdgeInsets.only(left: 10),
+                                  child: Text(
+                                    model.title,
+                                    style: const TextStyle(
+                                        fontSize: 14,
+                                        color: ThemeColors.color404040,
+                                        decoration: TextDecoration.none,
+                                        fontWeight: FontWeight.normal),
+                                  ),
+                                ),
+                                Container(
+                                  margin: const EdgeInsets.only(left: 10),
+                                  child: Text(
+                                    model.subtitle,
+                                    style: const TextStyle(
+                                        fontSize: 10,
+                                        color: ThemeColors.color404040,
+                                        decoration: TextDecoration.none,
+                                        fontWeight: FontWeight.normal),
+                                  ),
+                                )
+                              ],
                             ),
-                          ),
+                            model.clickable
+                                ? Positioned(
+                                    right: 0,
+                                    bottom: 0,
+                                    child: Container(
+                                      width: 31,
+                                      height: 31,
+                                      alignment: Alignment.bottomRight,
+                                      decoration: model.hasBg
+                                          ? BoxDecoration(
+                                              borderRadius: BorderRadius.only(
+                                                  topLeft: Radius.circular(200),
+                                                  bottomRight:
+                                                      Radius.circular(4)),
+                                              gradient:
+                                                  Gradients.blueLinearGradient,
+                                            )
+                                          : BoxDecoration(
+                                              borderRadius: BorderRadius.only(
+                                                  topLeft: Radius.circular(200),
+                                                  bottomRight:
+                                                      Radius.circular(4)),
+                                              color: ThemeColors.colorDEDEDE),
+                                      child: Container(
+                                        width: 16,
+                                        height: 16,
+                                        margin: const EdgeInsets.only(
+                                            right: 4, bottom: 4),
+                                        child: Image.asset(
+                                            'assets/images/ic_success.png'),
+                                      ),
+                                    ),
+                                  )
+                                : SizedBox(),
+                          ],
                         ),
-                      )
-                    : SizedBox(),
+                      ),
+                    ),
+                  ],
+                ),
                 ObjectUtil.isEmpty(model.tips)
                     ? SizedBox()
                     : Positioned(
                         top: 10,
                         child: Container(
-                          height: 14,
                           padding: const EdgeInsets.fromLTRB(10, 2, 10, 2),
                           decoration: BoxDecoration(
                               color: Color.fromARGB(139, 87, 42, 1),
@@ -409,7 +380,9 @@ class BookNowContentState extends State<BookNowContent> {
                           width: 150,
                           height: 20,
                           alignment: Alignment.center,
-                          color: ThemeColors.color96F5A623,
+                          color: model.clickable
+                              ? ThemeColors.color96F5A623
+                              : ThemeColors.color961A1A1A,
                           child: Text(
                             model.desc,
                             style: const TextStyle(
@@ -438,16 +411,16 @@ class BookNowContentState extends State<BookNowContent> {
           timeData: widget.timeData,
           bitData: widget.bitData,
           callback: (results) {
-            setState(() {
-              timeAndNum =
-                  '${widget.dateData[results[0]].title} ${widget.dateData[results[0]].subTitle} ${widget.timeData[results[1]].title}, ${widget.bitData[results[2]].title}';
-              if (null != widget.timeSelectorCallback) {
-                widget.timeSelectorCallback(results);
-              }
-            });
             Navigator.of(context).pop();
             Future.delayed(
                 Duration(milliseconds: 60), () => widget.callback(false));
+            setState(() {
+              timeAndNum =
+                  '${widget.dateData[results[0]].title} ${widget.dateData[results[0]].subTitle} ${widget.timeData[results[1]].title}, ${widget.bitData[results[2]].title}';
+            });
+            if (null != widget.timeSelectorCallback) {
+              widget.timeSelectorCallback(results);
+            }
           },
           dismissAction: () {
             Navigator.of(context).pop();
@@ -464,7 +437,7 @@ class BookNowContentState extends State<BookNowContent> {
   _clickPhoto(int index) {
     Navigator.of(context).push(PopRoute(
         child: RoomDetailPopupWindow(
-            roomModel: widget.roomModel,
+            roomModel: widget.roomModel[index],
             callback: () {
               setState(() {
                 widget.modelList.forEach((f) => f.hasBg = false);

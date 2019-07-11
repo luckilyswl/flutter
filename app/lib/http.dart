@@ -4,7 +4,6 @@ import 'package:dio/dio.dart';
 import 'dart:convert';
 import 'package:convert/convert.dart';
 import 'package:crypto/crypto.dart';
-import 'package:flutter/material.dart';
 import 'dart:collection';
 import 'api/api.dart';
 import 'utils/util.dart';
@@ -12,23 +11,38 @@ import 'utils/util.dart';
 class CustomInterceptor extends Interceptor {
   @override
   onRequest(RequestOptions options) async {
-    var defaultParameters = new SplayTreeMap();
-    defaultParameters["longitude"] = "113.3100967407226";
-    defaultParameters["latitude"] = "23.07718849182129";
+    var defaultParameters = new SplayTreeMap();   //签名用
+    var originalParameters = new SplayTreeMap();  //实际使用
+
+    if (DataUtils.getLongitude() != 0 && DataUtils.getLatitude() != 0) {
+      defaultParameters["longitude"] = DataUtils.getLongitude().toString();
+    defaultParameters["latitude"] = DataUtils.getLatitude().toString();
+    } else {
+      defaultParameters["longitude"] = '';
+      defaultParameters["latitude"] = '';
+    }
     if (DataUtils.getCityId() != 0) {
-      debugPrint(DataUtils.getCityId().toString());
       defaultParameters["city_id"] = DataUtils.getCityId().toString();
     }
     String sessionId = DataUtils.getSessionId();
     if (sessionId != null && sessionId.isNotEmpty) {
       defaultParameters["session_id"] = sessionId;
     }
+    
     defaultParameters["app_platform"] = Util.getPlatform();
     defaultParameters["app_channel"] = "360";
     defaultParameters["app_version"] = await Util.getVersion();
     defaultParameters["timestamp"] = Util.getCurrentTime().toString();
     defaultParameters["device_id"] = await Util.getUUID();
-    defaultParameters.addAll(options.queryParameters);
+
+    originalParameters.addAll(defaultParameters); //公共参数
+
+    if (options.method == 'POST') {
+      defaultParameters.addAll(options.data);
+    } else {
+      originalParameters.addAll(options.queryParameters); //业务参数
+      defaultParameters.addAll(options.queryParameters);
+    }
 
     String str2 = "";
     for (var key in defaultParameters.keys) {
@@ -41,12 +55,11 @@ class CustomInterceptor extends Interceptor {
     // 这里其实就是 digest.toString()
 
     String apiSign = hex.encode(digest.bytes);
-    defaultParameters["api_sign"] = apiSign;
 
+    originalParameters["api_sign"] = apiSign; //签名
+    options.queryParameters = Map.from(originalParameters);
     // 打印网络请求日志
-    options.queryParameters = Map.from(defaultParameters);
     String url = options.baseUrl + options.path;
-
     String query = "";
     String temp;
     Map<String, dynamic> map = options.queryParameters;

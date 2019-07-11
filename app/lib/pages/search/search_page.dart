@@ -1,7 +1,17 @@
+import 'package:app/api/net_index.dart';
+import 'package:app/model/req_business_list_bean.dart';
 import 'package:app/navigator/page_route.dart';
 import 'package:flutter/material.dart';
 import 'package:app/res/res_index.dart';
 import 'package:app/utils/utils_index.dart';
+import 'package:app/api/api.dart';
+import 'package:app/widget/widgets_index.dart';
+import 'dart:convert';
+import 'package:app/http.dart';
+import 'package:app/model/search_page_bean.dart';
+import 'package:app/pages/pages_index.dart';
+import 'package:flutter_lifecycle_state/flutter_lifecycle_state.dart';
+import 'package:app/constant.dart';
 
 /*
  * 搜索页 Page
@@ -13,42 +23,98 @@ class SearchPage extends StatefulWidget {
   }
 }
 
-class SearchPageState extends State<SearchPage> {
+class SearchPageState extends StateWithLifecycle<SearchPage> {
+  //商家列表接口请求bean
+  ReqBusinessListBean reqBusinessListBean;
+
   //最近搜索
-  List<String> recentList;
+  List<String> recentList = [];
 
   //热门搜索
-  List<String> hotList;
+  List<HotSearchListBean> hotList = [];
 
   //文本控制器
   TextEditingController _textEditingController;
 
+  //输入框焦点控制
+  FocusNode _focusNode;
+
+  //是否已经初始化页面
+  bool isInit = false;
+
+  //输入框hint值
+  String hintText;
+
+  //广告图
+  String imgUrl = '';
+
   @override
   void initState() {
     super.initState();
-    recentList = [
-      '花园酒店',
-      '花悦庭',
-      '雅韵',
-      '蜀九香',
-      '朝花熹食 · 餐饮艺术空间',
-      '梵高艺术餐厅',
-      '花园酒店',
-      '花悦庭',
-      '雅韵'
-    ];
-    hotList = [
-      '21楼私厨',
-      '101江景私厨',
-      '至正小菜',
-      '陶然轩',
-      '陶然轩',
-      '珍姐龙虾',
-      '至正小菜',
-      '陶然轩',
-      '陶然轩',
-      '珍姐龙虾'
-    ];
+    _textEditingController = TextEditingController();
+    _focusNode = FocusNode();
+
+    //从sp中获取推荐内容
+    hintText =
+        SpUtil.getString(Constant.sp_search_motion, defValue: '附近热门推荐：') +
+            SpUtil.getString(Constant.sp_search_tip, defValue: '至正小菜');
+
+    _textEditingController.addListener(() {
+      setState(() {});
+    });
+
+    WidgetsBinding.instance.addPostFrameCallback((time) {
+      initData();
+      if (!isInit) {
+        Future.delayed(Duration(milliseconds: 200), () {
+          if (!_focusNode.hasFocus) {
+            FocusScope.of(context).requestFocus(_focusNode);
+            isInit = true;
+          }
+        });
+      }
+    });
+
+    reqBusinessListBean = ReqBusinessListBean();
+  }
+
+  void onResume() {
+    super.onResume();
+    Future.delayed(Duration(milliseconds: 200), () {
+      if (!_focusNode.hasFocus && isInit) {
+        FocusScope.of(context).requestFocus(_focusNode);
+      }
+      initData();
+    });
+  }
+
+  void onPause() {
+    super.onPause();
+    if (null != _focusNode) {
+      _focusNode.unfocus();
+    }
+  }
+
+  ///网络请求
+  initData() {
+    ///搜索页接口
+    dio.get(Api.SEARCH_PAGE_DATA).then((data) {
+      var body = jsonDecode(data.toString());
+      SearchPageBean bean = SearchPageBean.fromJson(body);
+      if (Api.SUCCESS_CODE == bean.error_code) {
+        setState(() {
+          recentList = bean.data.history;
+          recentList ??= [];
+          hotList = bean.data.hotSearch;
+          hotList ??= [];
+          imgUrl = ObjectUtil.isEmptyList(bean.data?.banner)
+              ? ''
+              : bean.data?.banner[0]?.imgUrl;
+        });
+      } else {
+        Toast.toast(context, bean?.msg);
+      }
+    });
   }
 
   @override
@@ -90,15 +156,8 @@ class SearchPageState extends State<SearchPage> {
                           children: <Widget>[
                             SizedBox(width: 10),
                             SizedBox(
-                              width: 14,
-                              height: 14,
                               child: Center(
-                                child: Image.asset(
-                                  'assets/images/ic_message.png',
-                                  width: 9,
-                                  height: 9,
-                                  fit: BoxFit.fill,
-                                ),
+                                child: Icon(Icons.search),
                               ),
                             ),
                             SizedBox(width: 4),
@@ -109,7 +168,8 @@ class SearchPageState extends State<SearchPage> {
                                 padding: const EdgeInsets.only(right: 12),
                                 child: Material(
                                   color: Colors.transparent,
-                                  child: TextField(
+                                  child: TextFormField(
+                                    focusNode: _focusNode,
                                     controller: _textEditingController,
                                     style: const TextStyle(
                                         fontSize: 12,
@@ -117,10 +177,16 @@ class SearchPageState extends State<SearchPage> {
                                     maxLines: 1,
                                     keyboardType: TextInputType.text,
                                     textInputAction: TextInputAction.search,
+                                    onFieldSubmitted: (text) {
+                                      reqBusinessListBean.keywords = text;
+                                      Navigator.of(context).pushNamed(
+                                          Page.SEARCH_RESULT_PAGE,
+                                          arguments: reqBusinessListBean);
+                                    },
                                     decoration: InputDecoration(
                                       contentPadding:
                                           const EdgeInsets.only(top: 2),
-                                      hintText: '附近热门推荐：至正小菜',
+                                      hintText: hintText,
                                       border: InputBorder.none,
                                       hintStyle: const TextStyle(
                                           decoration: TextDecoration.none,
@@ -132,19 +198,16 @@ class SearchPageState extends State<SearchPage> {
                                 ),
                               ),
                             ),
-                            GestureDetector(
-                              onTap: () => _textEditingController.clear(),
-                              child: Container(
-                                alignment: Alignment.center,
-                                margin: const EdgeInsets.only(right: 10),
-                                child: Image.asset(
-                                  'assets/images/ic_message.png',
-                                  width: 14,
-                                  height: 14,
-                                  fit: BoxFit.fill,
-                                ),
-                              ),
-                            ),
+                            0 == _textEditingController.text.length
+                                ? SizedBox()
+                                : GestureDetector(
+                                    onTap: () => _textEditingController.clear(),
+                                    child: Container(
+                                      alignment: Alignment.center,
+                                      margin: const EdgeInsets.only(right: 10),
+                                      child: Icon(Icons.clear),
+                                    ),
+                                  ),
                           ],
                         ),
                       ),
@@ -201,21 +264,13 @@ class SearchPageState extends State<SearchPage> {
                                   ),
                                 ),
                                 Expanded(
-                                  child: Align(
+                                  child: Container(
                                     alignment: Alignment.centerRight,
-                                    child: GestureDetector(
-                                      onTap: () {},
-                                      child: Container(
-                                        width: 20,
-                                        height: 20,
-                                        alignment: Alignment.centerRight,
-                                        child: Center(
-                                          child: Image.asset(
-                                              'assets/images/ic_message.png',
-                                              width: 16,
-                                              height: 14,
-                                              fit: BoxFit.fill),
-                                        ),
+                                    child: Material(
+                                      color: Colors.transparent,
+                                      child: IconButton(
+                                        icon: Icon(Icons.delete),
+                                        onPressed: _clickDelete,
                                       ),
                                     ),
                                   ),
@@ -235,22 +290,17 @@ class SearchPageState extends State<SearchPage> {
                               ),
                             ),
                             SizedBox(height: 20),
-                            Container(
-                              height: 80,
-                              alignment: Alignment.center,
-                              decoration: BoxDecoration(
-                                color: ThemeColors.colorD8D8D8,
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                              child: Center(
-                                child: Text(
-                                  '广告位',
-                                  style: const TextStyle(
-                                      fontSize: 20,
-                                      decoration: TextDecoration.none,
-                                      fontWeight: FontWeight.w700,
-                                      color: ThemeColors.color404040),
-                                ),
+                            GestureDetector(
+                              onTap: () => Toast.toast(context, '跳转充值页'),
+                              child: Container(
+                                height: 50,
+                                alignment: Alignment.center,
+                                decoration: BoxDecoration(
+                                    color: ThemeColors.colorD8D8D8,
+                                    borderRadius: BorderRadius.circular(4),
+                                    image: DecorationImage(
+                                        image: NetworkImage(imgUrl),
+                                        fit: BoxFit.fitWidth)),
                               ),
                             ),
                             SizedBox(height: 20),
@@ -272,7 +322,8 @@ class SearchPageState extends State<SearchPage> {
                                 spacing: 10,
                                 alignment: WrapAlignment.start,
                                 children: hotList
-                                    .map((f) => _buildKeyBtn(f, true))
+                                    .map((f) => _buildKeyBtn(f.shopName, true,
+                                        id: f.id))
                                     .toList(),
                               ),
                             ),
@@ -291,16 +342,18 @@ class SearchPageState extends State<SearchPage> {
   }
 
   ///创建文字按钮
-  Widget _buildKeyBtn(String value, bool isHot) {
+  Widget _buildKeyBtn(String value, bool isHot, {int id = 0}) {
     return FlatButton(
       color: ThemeColors.colorF2F2F2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(2)),
       onPressed: () {
         if (isHot) {
-          Navigator.of(context).pushNamed(Page.BUSINESS_DETAIL_PAGE);
+          Navigator.of(context).push(
+              MaterialPageRoute(builder: (context) => BusinessDetailPage(id)));
         } else {
-          Navigator.of(context)
-              .pushNamed(Page.SEARCH_RESULT_PAGE, arguments: value);
+          reqBusinessListBean.keywords = value;
+          Navigator.of(context).pushNamed(Page.SEARCH_RESULT_PAGE,
+              arguments: reqBusinessListBean);
         }
       },
       child: Text(
@@ -314,5 +367,21 @@ class SearchPageState extends State<SearchPage> {
         ),
       ),
     );
+  }
+
+  ///删除最近搜索点击事件
+  _clickDelete() {
+    dio.get(Api.SEARCH_DELETE).then((data) {
+      var body = jsonDecode(data.toString());
+      CommonBean bean = CommonBean.fromJson(body);
+      if (Api.SUCCESS_CODE == bean?.errorCode) {
+        if (!ObjectUtil.isEmptyList(hotList)) {
+          hotList.clear();
+        }
+        Toast.toast(context, '清除成功');
+      } else {
+        Toast.toast(context, bean?.msg);
+      }
+    });
   }
 }
