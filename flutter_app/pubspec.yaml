@@ -22,20 +22,20 @@ dependencies:
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
-  cupertino_icons: ^0.1.2
+  cupertino_icons: ">=0.1.2 <2.0.0"
   flutter_swiper: ^1.1.4
-  dio: ^2.1.0 #网络库
-  crypto: ^2.0.6  #md5加密
-  url_launcher: ^3.0.3  #拨打电话
-  package_info: ^0.4.0+4  #设备信息
-  uuid: 2.0.1 #uuid
-  shared_preferences: ^0.4.3  # 本地存储、收藏功能
-  fluwx: ^0.6.3 #微信
-  cached_network_image: ^0.8.0
+  dio: ">=2.1.0 <6.0.0" #网络库
+  crypto: ">=2.0.6 <4.0.0"  #md5加密
+  url_launcher: ">=3.0.3 <7.0.0"  #拨打电话
+  package_info: ">=0.4.0+4 <3.0.0"  #设备信息
+  uuid: ">=2.0.1 <4.0.0" #uuid
+  shared_preferences: ">=0.4.3 <3.0.0"  # 本地存储、收藏功能
+  fluwx: ">=0.6.3 <4.0.0" #微信
+  cached_network_image: ">=0.8.0 <4.0.0"
   image_gallery_saver: ^1.1.0
-  permission_handler: ^3.0.1
+  permission_handler: ">=3.0.1 <11.0.0"
   image_saver: ^1.0.0
-  http: ^0.12.0+2
+  http: ">=0.12.0+2 <0.14.0"
 
 dev_dependencies:
   flutter_test:
